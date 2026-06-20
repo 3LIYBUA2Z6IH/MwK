@@ -1,0 +1,222 @@
+-- Jawa UI Library (Simple Clean Version)
+-- Made for Roblox Studio (Luau)
+
+local JawaUI = {}
+JawaUI.__index = JawaUI
+
+-- Services
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Create main window
+function JawaUI:CreateWindow(title)
+    local self = setmetatable({}, JawaUI)
+
+    -- ScreenGui
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "JawaUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = PlayerGui
+
+    -- Main Frame
+    local Main = Instance.new("Frame")
+    Main.Size = UDim2.new(0, 500, 0, 350)
+    Main.Position = UDim2.new(0.5, -250, 0.5, -175)
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Main.Parent = ScreenGui
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 10)
+    Corner.Parent = Main
+
+    -- Title
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 0, 40)
+    Title.BackgroundTransparency = 1
+    Title.Text = title or "JAWA UI"
+    Title.TextColor3 = Color3.fromRGB(255,255,255)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 18
+    Title.Parent = Main
+
+    -- Tab holder
+    local TabHolder = Instance.new("Frame")
+    TabHolder.Size = UDim2.new(0, 120, 1, -40)
+    TabHolder.Position = UDim2.new(0, 0, 0, 40)
+    TabHolder.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    TabHolder.Parent = Main
+
+    local TabLayout = Instance.new("UIListLayout")
+    TabLayout.Parent = TabHolder
+
+    self.ScreenGui = ScreenGui
+    self.Main = Main
+    self.TabHolder = TabHolder
+    self.Tabs = {}
+
+    -- Dock (bottom navigation)
+    local Dock = Instance.new("Frame")
+    Dock.Size = UDim2.new(0, 300, 0, 40)
+    Dock.Position = UDim2.new(0.5, -150, 1, 10)
+    Dock.BackgroundColor3 = Color3.fromRGB(30,30,35)
+    Dock.Parent = ScreenGui
+
+    local DockCorner = Instance.new("UICorner")
+    DockCorner.CornerRadius = UDim.new(0, 10)
+    DockCorner.Parent = Dock
+
+    self.Dock = Dock
+
+    return self
+end
+
+-- Create Tab
+function JawaUI:CreateTab(name, icon)
+    local TabButton = Instance.new("TextButton")
+    TabButton.Size = UDim2.new(1, 0, 0, 35)
+    TabButton.Text = icon .. " " .. name
+    TabButton.BackgroundColor3 = Color3.fromRGB(30,30,35)
+    TabButton.TextColor3 = Color3.fromRGB(255,255,255)
+    TabButton.Parent = self.TabHolder
+
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = TabButton
+
+    local Page = Instance.new("Frame")
+    Page.Size = UDim2.new(1, -120, 1, -40)
+    Page.Position = UDim2.new(0, 120, 0, 40)
+    Page.BackgroundTransparency = 1
+    Page.Visible = false
+    Page.Parent = self.Main
+
+    local Layout = Instance.new("UIListLayout")
+    Layout.Parent = Page
+    Layout.Padding = UDim.new(0, 5)
+
+    local tab = {
+        Button = TabButton,
+        Page = Page
+    }
+
+    function tab:Show()
+        for _, t in pairs(self.Parent.Tabs) do
+            t.Page.Visible = false
+        end
+        Page.Visible = true
+    end
+
+    TabButton.MouseButton1Click:Connect(function()
+        Page.Visible = true
+        for _, t in pairs(self.Parent.Tabs) do
+            if t.Page ~= Page then
+                t.Page.Visible = false
+            end
+        end
+    end)
+
+    table.insert(self.Tabs, tab)
+    tab.Parent = self
+
+    return tab
+end
+
+-- Toggle
+function JawaUI:CreateToggle(tab, name, callback)
+    local Toggle = Instance.new("TextButton")
+    Toggle.Size = UDim2.new(1, 0, 0, 35)
+    Toggle.BackgroundColor3 = Color3.fromRGB(30,30,35)
+    Toggle.TextColor3 = Color3.fromRGB(255,255,255)
+    Toggle.Text = name .. "    ○ OFF"
+    Toggle.Parent = tab.Page
+
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = Toggle
+
+    local state = false
+
+    Toggle.MouseButton1Click:Connect(function()
+        state = not state
+        if state then
+            Toggle.Text = name .. "    ⦿ ON"
+        else
+            Toggle.Text = name .. "    ○ OFF"
+        end
+        if callback then
+            callback(state)
+        end
+    end)
+end
+
+-- Button
+function JawaUI:CreateButton(tab, name, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, 0, 0, 35)
+    Button.BackgroundColor3 = Color3.fromRGB(40,40,45)
+    Button.TextColor3 = Color3.fromRGB(255,255,255)
+    Button.Text = name
+    Button.Parent = tab.Page
+
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = Button
+
+    Button.MouseButton1Click:Connect(function()
+        if callback then
+            callback()
+        end
+    end)
+end
+
+-- Slider (simple)
+function JawaUI:CreateSlider(tab, name, min, max, callback)
+    local SliderFrame = Instance.new("Frame")
+    SliderFrame.Size = UDim2.new(1, 0, 0, 50)
+    SliderFrame.BackgroundColor3 = Color3.fromRGB(30,30,35)
+    SliderFrame.Parent = tab.Page
+
+    local Corner = Instance.new("UICorner")
+    Corner.Parent = SliderFrame
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, 0, 0, 25)
+    Label.BackgroundTransparency = 1
+    Label.TextColor3 = Color3.fromRGB(255,255,255)
+    Label.Text = name
+    Label.Parent = SliderFrame
+
+    local Bar = Instance.new("Frame")
+    Bar.Size = UDim2.new(1, -20, 0, 10)
+    Bar.Position = UDim2.new(0, 10, 0, 30)
+    Bar.BackgroundColor3 = Color3.fromRGB(50,50,60)
+    Bar.Parent = SliderFrame
+
+    local Fill = Instance.new("Frame")
+    Fill.Size = UDim2.new(0, 0, 1, 0)
+    Fill.BackgroundColor3 = Color3.fromRGB(80,120,255)
+    Fill.Parent = Bar
+
+    local dragging = false
+
+    Bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+        end
+    end)
+
+    Bar.InputEnded:Connect(function()
+        dragging = false
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging then
+            local pos = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+            Fill.Size = UDim2.new(pos, 0, 1, 0)
+            local value = math.floor(min + (max - min) * pos)
+            if callback then
+                callback(value)
+            end
+        end
+    end)
+end
+
+return JawaUI
