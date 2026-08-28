@@ -1,0 +1,1697 @@
+--[[
+    AstraUI - Single File Roblox UI Library
+    Version: 1.0.0
+
+    GitHub usage (where loadstring/HttpGet is supported):
+        local AstraUI = loadstring(game:HttpGet("RAW_GITHUB_URL"))()
+        local UI = AstraUI.new()
+
+    Roblox Studio / own experience:
+        Put this file into a ModuleScript and use:
+        local AstraUI = require(path.To.AstraUI)
+
+    Notes:
+    - Client-side UI only.
+    - ScreenGui is the primary surface.
+    - SurfaceGui/BillboardGui can use the same GuiObject/component patterns.
+    - User callbacks are protected with xpcall.
+    - Static UI is event-driven; no RenderStepped polling is used.
+]]
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+
+local AstraUI = {}
+AstraUI.__index = AstraUI
+
+-- =========================================================
+-- CONFIG
+-- =========================================================
+
+local Config = -- Default configuration. Copy/override fields when constructing AstraUI.
+return {
+    Theme = "Dark",
+    Font = Enum.Font.Gotham,
+    CornerRadius = 10,
+    Spacing = 8,
+    Animation = {
+        Enabled = true,
+        Duration = 0.18,
+        EasingStyle = Enum.EasingStyle.Quart,
+        EasingDirection = Enum.EasingDirection.Out,
+    },
+    Colors = {
+        Dark = {
+            Background = Color3.fromRGB(16, 18, 24),
+            Surface = Color3.fromRGB(23, 26, 34),
+            Surface2 = Color3.fromRGB(30, 34, 44),
+            Text = Color3.fromRGB(240, 242, 247),
+            Muted = Color3.fromRGB(157, 164, 178),
+            Accent = Color3.fromRGB(96, 165, 250),
+            Success = Color3.fromRGB(74, 222, 128),
+            Error = Color3.fromRGB(248, 113, 113),
+            Warning = Color3.fromRGB(250, 204, 21),
+            Border = Color3.fromRGB(55, 61, 74),
+        },
+        Light = {
+            Background = Color3.fromRGB(244, 246, 250),
+            Surface = Color3.fromRGB(255, 255, 255),
+            Surface2 = Color3.fromRGB(235, 238, 244),
+            Text = Color3.fromRGB(25, 29, 38),
+            Muted = Color3.fromRGB(95, 102, 116),
+            Accent = Color3.fromRGB(37, 99, 235),
+            Success = Color3.fromRGB(22, 163, 74),
+            Error = Color3.fromRGB(220, 38, 38),
+            Warning = Color3.fromRGB(202, 138, 4),
+            Border = Color3.fromRGB(210, 215, 224),
+        }
+    }
+}
+
+-- =========================================================
+-- UTILITY
+-- =========================================================
+
+local Util = {}
+
+function Util.New(className, props)
+    local object = Instance.new(className)
+    for key, value in pairs(props or {}) do
+        object[key] = value
+    end
+    return object
+end
+
+function Util.Corner(parent, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius)
+    c.Parent = parent
+    return c
+end
+
+function Util.Stroke(parent, color, transparency)
+    local s = Instance.new("UIStroke")
+    s.Color = color
+    s.Transparency = transparency or 0
+    s.Parent = parent
+    return s
+end
+
+function Util.Padding(parent, amount)
+    local p = Instance.new("UIPadding")
+    p.PaddingTop = UDim.new(0, amount)
+    p.PaddingBottom = UDim.new(0, amount)
+    p.PaddingLeft = UDim.new(0, amount)
+    p.PaddingRight = UDim.new(0, amount)
+    p.Parent = parent
+    return p
+end
+
+function Util.Text(parent, text, font, size, color)
+    return Util.New("TextLabel", {
+        Parent = parent,
+        BackgroundTransparency = 1,
+        Text = text or "",
+        Font = font,
+        TextSize = size or 14,
+        TextColor3 = color,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+end
+
+function Util.BindHover(button, animation, normal, hover)
+    button.MouseEnter:Connect(function()
+        animation:Tween(button, hover)
+    end)
+    button.MouseLeave:Connect(function()
+        animation:Tween(button, normal)
+    end)
+end
+
+function Util.Ripple(button, position)
+    local circle = Instance.new("Frame")
+    circle.AnchorPoint = Vector2.new(.5, .5)
+    circle.Position = UDim2.fromOffset(position.X, position.Y)
+    circle.Size = UDim2.fromOffset(0, 0)
+    circle.BackgroundColor3 = Color3.new(1, 1, 1)
+    circle.BackgroundTransparency = .82
+    circle.BorderSizePixel = 0
+    circle.ZIndex = button.ZIndex + 1
+    circle.Parent = button
+    Util.Corner(circle, 999)
+
+    local target = math.max(button.AbsoluteSize.X, button.AbsoluteSize.Y) * 1.8
+    local tween = TweenService:Create(
+        circle,
+        TweenInfo.new(.35, Enum.EasingStyle.Quad),
+        {
+            Size = UDim2.fromOffset(target, target),
+            BackgroundTransparency = 1
+        }
+    )
+    tween:Play()
+    tween.Completed:Connect(function()
+        if circle then circle:Destroy() end
+    end)
+end
+
+function Util.MakeDraggable(handle, target)
+    local dragging = false
+    local dragStart
+    local startPos
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+
+            dragging = true
+            dragStart = input.Position
+            startPos = target.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    return UserInputService.InputChanged:Connect(function(input)
+        if not dragging then return end
+
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch then
+
+            local delta = input.Position - dragStart
+
+            target.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+function Util.MakeResizable(grip, target, minSize, maxSize)
+    local resizing = false
+    local startMouse
+    local startSize
+
+    grip.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+
+            resizing = true
+            startMouse = input.Position
+            startSize = target.AbsoluteSize
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    resizing = false
+                end
+            end)
+        end
+    end)
+
+    return UserInputService.InputChanged:Connect(function(input)
+        if not resizing then return end
+
+        if input.UserInputType ~= Enum.UserInputType.MouseMovement
+            and input.UserInputType ~= Enum.UserInputType.Touch then
+            return
+        end
+
+        local delta = input.Position - startMouse
+
+        local x = math.clamp(
+            startSize.X + delta.X,
+            minSize.X,
+            maxSize.X
+        )
+
+        local y = math.clamp(
+            startSize.Y + delta.Y,
+            minSize.Y,
+            maxSize.Y
+        )
+
+        target.Size = UDim2.fromOffset(x, y)
+    end)
+end
+
+function Util.GetPlayerGui()
+    local player = Players.LocalPlayer
+    if not player then return nil end
+    return player:FindFirstChildOfClass("PlayerGui")
+end
+
+-- =========================================================
+-- ANIMATION
+-- =========================================================
+
+local Animation = {}
+Animation.__index = Animation
+
+function Animation.new(config)
+    config = config or {}
+
+    return setmetatable({
+        Enabled = config.Enabled ~= false,
+        Duration = config.Duration or .18,
+        EasingStyle = config.EasingStyle or Enum.EasingStyle.Quart,
+        EasingDirection = config.EasingDirection or Enum.EasingDirection.Out,
+    }, Animation)
+end
+
+--[[
+    Tween(instance, properties, duration?, style?, direction?)
+    Returns Tween or nil when animations are disabled.
+]]
+function Animation:Tween(instance, properties, duration, style, direction)
+    if not instance then return nil end
+
+    if not self.Enabled then
+        for key, value in pairs(properties) do
+            instance[key] = value
+        end
+        return nil
+    end
+
+    local tween = TweenService:Create(
+        instance,
+        TweenInfo.new(
+            duration or self.Duration,
+            style or self.EasingStyle,
+            direction or self.EasingDirection
+        ),
+        properties
+    )
+
+    tween:Play()
+    return tween
+end
+
+function Animation:Stop(tween)
+    if tween then
+        tween:Cancel()
+    end
+end
+
+-- =========================================================
+-- THEME
+-- =========================================================
+
+local Theme = {}
+Theme.__index = Theme
+
+function Theme.new(initial)
+    local self = setmetatable({}, Theme)
+
+    self.Changed = Instance.new("BindableEvent")
+    self.Palettes = Config.Colors
+    self.CurrentName = initial or Config.Theme or "Dark"
+    self.Current = self.Palettes[self.CurrentName] or self.Palettes.Dark
+
+    return self
+end
+
+function Theme:Get(key)
+    return self.Current[key] or self.Current.Text
+end
+
+--[[
+    Set("Dark"), Set("Light"), or Set(customPalette)
+]]
+function Theme:Set(value)
+    if type(value) == "string" then
+        assert(self.Palettes[value], "AstraUI: Unknown theme: " .. value)
+
+        self.CurrentName = value
+        self.Current = self.Palettes[value]
+
+    elseif type(value) == "table" then
+        self.CurrentName = "Custom"
+        self.Current = value
+
+    else
+        error("AstraUI: Theme:Set expects a theme name or palette table")
+    end
+
+    self.Changed:Fire(self.Current)
+end
+
+function Theme:Destroy()
+    if self.Changed then
+        self.Changed:Destroy()
+        self.Changed = nil
+    end
+end
+
+-- =========================================================
+-- SAFE CALLBACK
+-- =========================================================
+
+local function safeCall(callback, ...)
+    if type(callback) ~= "function" then
+        return
+    end
+
+    local ok, err = xpcall(callback, debug.traceback, ...)
+
+    if not ok then
+        warn("[AstraUI] Callback error:\n" .. tostring(err))
+    end
+end
+
+-- =========================================================
+-- COMPONENTS
+-- =========================================================
+
+local Components = {}
+
+local Window = {}
+Window.__index = Window
+
+function Window.new(lib, root, body, header, refs)
+    return setmetatable({
+        Lib = lib,
+        Instance = root,
+        Body = body,
+        Header = header,
+        Refs = refs,
+        Minimized = false,
+    }, Window)
+end
+
+function Window:ApplyTheme()
+    local theme = self.Lib.Theme
+
+    self.Instance.BackgroundColor3 = theme:Get("Background")
+    self.Refs.Header.BackgroundColor3 = theme:Get("Surface")
+    self.Refs.Title.TextColor3 = theme:Get("Text")
+    self.Refs.Min.TextColor3 = theme:Get("Text")
+    self.Refs.Close.TextColor3 = theme:Get("Text")
+end
+
+function Window:SetMinimized(value)
+    self.Minimized = value == true
+
+    self.Refs.Min.Text = self.Minimized and "+" or "—"
+
+    self.Lib.Animation:Tween(
+        self.Body,
+        {
+            Size = self.Minimized
+                and UDim2.new(1, 0, 0, 0)
+                or UDim2.new(1, 0, 1, -48)
+        }
+    )
+end
+
+function Window:AddLabel(text)
+    local label = Util.Text(
+        self.Body,
+        text,
+        Config.Font,
+        13,
+        self.Lib.Theme:Get("Muted")
+    )
+
+    label.Size = UDim2.new(1, 0, 0, 24)
+
+    return label
+end
+
+local function buttonBase(lib, parent, text)
+    local theme = lib.Theme
+    local animation = lib.Animation
+
+    local button = Util.New("TextButton", {
+        Parent = parent,
+        Size = UDim2.new(1, 0, 0, 40),
+        Text = text or "Button",
+        Font = Config.Font,
+        TextSize = 14,
+        TextColor3 = theme:Get("Text"),
+        BackgroundColor3 = theme:Get("Surface"),
+        AutoButtonColor = false,
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(button, 8)
+    Util.Stroke(button, theme:Get("Border"), .35)
+
+    Util.BindHover(
+        button,
+        animation,
+        {BackgroundColor3 = theme:Get("Surface")},
+        {BackgroundColor3 = theme:Get("Surface2")}
+    )
+
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            Util.Ripple(
+                button,
+                input.Position - button.AbsolutePosition
+            )
+        end
+    end)
+
+    return button
+end
+
+--[[
+    AddButton({
+        Text = "Button",
+        Style = "Solid" | "Outline" | "Gradient",
+        Callback = function() end
+    })
+]]
+function Window:AddButton(config)
+    config = config or {}
+
+    local button = buttonBase(
+        self.Lib,
+        self.Body,
+        config.Text
+    )
+
+    button.LayoutOrder = config.LayoutOrder or 0
+
+    if config.Style == "Outline" then
+        button.BackgroundTransparency = 1
+    elseif config.Style == "Gradient" then
+        local gradient = Instance.new("UIGradient")
+        gradient.Rotation = 90
+        gradient.Color = ColorSequence.new(
+            self.Lib.Theme:Get("Accent"),
+            self.Lib.Theme:Get("Surface")
+        )
+        gradient.Parent = button
+    end
+
+    button.Activated:Connect(function()
+        safeCall(config.Callback)
+    end)
+
+    return button
+end
+
+function Window:AddToggle(config)
+    config = config or {}
+
+    local theme = self.Lib.Theme
+
+    local row = Util.New("TextButton", {
+        Parent = self.Body,
+        Size = UDim2.new(1, 0, 0, 42),
+        Text = "",
+        BackgroundColor3 = theme:Get("Surface"),
+        AutoButtonColor = false,
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(row, 8)
+
+    local label = Util.Text(
+        row,
+        config.Text or "Toggle",
+        Config.Font,
+        13,
+        theme:Get("Text")
+    )
+
+    label.Position = UDim2.fromOffset(12, 9)
+    label.Size = UDim2.new(1, -68, 0, 24)
+
+    local track = Util.New("Frame", {
+        Parent = row,
+        Size = UDim2.fromOffset(42, 22),
+        Position = UDim2.new(1, -52, .5, -11),
+        BackgroundColor3 = theme:Get("Surface2"),
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(track, 99)
+
+    local knob = Util.New("Frame", {
+        Parent = track,
+        Size = UDim2.fromOffset(18, 18),
+        Position = UDim2.fromOffset(2, 2),
+        BackgroundColor3 = theme:Get("Muted"),
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(knob, 99)
+
+    local state = config.Default == true
+
+    local function set(value, fire)
+        state = not not value
+
+        self.Lib.Animation:Tween(
+            track,
+            {
+                BackgroundColor3 = state
+                    and theme:Get("Accent")
+                    or theme:Get("Surface2")
+            }
+        )
+
+        self.Lib.Animation:Tween(
+            knob,
+            {
+                Position = state
+                    and UDim2.fromOffset(22, 2)
+                    or UDim2.fromOffset(2, 2),
+
+                BackgroundColor3 = state
+                    and Color3.new(1, 1, 1)
+                    or theme:Get("Muted")
+            }
+        )
+
+        if fire then
+            safeCall(config.Callback, state)
+        end
+    end
+
+    row.Activated:Connect(function()
+        set(not state, true)
+    end)
+
+    set(state, false)
+
+    return {
+        Instance = row,
+        Get = function()
+            return state
+        end,
+        Set = function(_, value)
+            set(value, true)
+        end,
+    }
+end
+
+function Window:AddCheckbox(config)
+    config = config or {}
+
+    local theme = self.Lib.Theme
+
+    local row = Util.New("TextButton", {
+        Parent = self.Body,
+        Size = UDim2.new(1, 0, 0, 40),
+        Text = "",
+        BackgroundTransparency = 1,
+        AutoButtonColor = false,
+    })
+
+    local box = Util.New("Frame", {
+        Parent = row,
+        Size = UDim2.fromOffset(20, 20),
+        Position = UDim2.fromOffset(2, 10),
+        BackgroundColor3 = theme:Get("Surface2"),
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(box, 5)
+    Util.Stroke(box, theme:Get("Border"), .2)
+
+    local mark = Util.Text(
+        box,
+        "✓",
+        Config.Font,
+        15,
+        Color3.new(1, 1, 1)
+    )
+
+    mark.Size = UDim2.fromScale(1, 1)
+    mark.TextXAlignment = Enum.TextXAlignment.Center
+    mark.TextTransparency = 1
+
+    local label = Util.Text(
+        row,
+        config.Text or "Checkbox",
+        Config.Font,
+        13,
+        theme:Get("Text")
+    )
+
+    label.Position = UDim2.fromOffset(32, 8)
+    label.Size = UDim2.new(1, -32, 0, 24)
+
+    local state = config.Default == true
+
+    local function set(value, fire)
+        state = not not value
+
+        mark.TextTransparency = state and 0 or 1
+        box.BackgroundColor3 = state
+            and theme:Get("Accent")
+            or theme:Get("Surface2")
+
+        if fire then
+            safeCall(config.Callback, state)
+        end
+    end
+
+    row.Activated:Connect(function()
+        set(not state, true)
+    end)
+
+    set(state, false)
+
+    return {
+        Instance = row,
+        Get = function()
+            return state
+        end,
+        Set = function(_, value)
+            set(value, true)
+        end,
+    }
+end
+
+function Window:AddInput(config)
+    config = config or {}
+
+    local theme = self.Lib.Theme
+
+    local input = Util.New("TextBox", {
+        Parent = self.Body,
+        Size = UDim2.new(1, 0, 0, 40),
+        Text = "",
+        PlaceholderText = config.Placeholder or "",
+        ClearTextOnFocus = false,
+        Font = Config.Font,
+        TextSize = 14,
+        TextColor3 = theme:Get("Text"),
+        PlaceholderColor3 = theme:Get("Muted"),
+        BackgroundColor3 = theme:Get("Surface"),
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(input, 8)
+    Util.Padding(input, 12)
+
+    input.TextEditable = config.TextEditable ~= false
+
+    if config.Password then
+        input.TextEditable = true
+        input.TextXAlignment = Enum.TextXAlignment.Left
+        -- Roblox TextBox does not provide a secure password mode through
+        -- a universal property in every runtime version. Keep this API
+        -- compatible rather than relying on an unstable property.
+    end
+
+    local function validate(text)
+        if type(config.Validator) ~= "function" then
+            return true
+        end
+
+        local ok, result = xpcall(
+            config.Validator,
+            debug.traceback,
+            text
+        )
+
+        if not ok then
+            warn("[AstraUI] Validator error:\n" .. tostring(result))
+            return false
+        end
+
+        return result ~= false
+    end
+
+    input.FocusLost:Connect(function()
+        if not validate(input.Text) then
+            input.TextColor3 = theme:Get("Error")
+        else
+            input.TextColor3 = theme:Get("Text")
+            safeCall(config.Callback, input.Text)
+        end
+    end)
+
+    return input
+end
+
+function Window:AddSlider(config)
+    config = config or {}
+
+    local theme = self.Lib.Theme
+
+    local minimum = config.Min or 0
+    local maximum = config.Max or 100
+
+    assert(
+        maximum > minimum,
+        "AstraUI: Slider Max must be greater than Min"
+    )
+
+    local row = Util.New("Frame", {
+        Parent = self.Body,
+        Size = UDim2.new(1, 0, 0, 58),
+        BackgroundTransparency = 1,
+    })
+
+    local title = Util.Text(
+        row,
+        config.Text or "Slider",
+        Config.Font,
+        13,
+        theme:Get("Text")
+    )
+
+    title.Size = UDim2.new(1, -70, 0, 24)
+
+    local valueLabel = Util.Text(
+        row,
+        tostring(config.Default or minimum),
+        Config.Font,
+        13,
+        theme:Get("Muted")
+    )
+
+    valueLabel.Position = UDim2.new(1, -60, 0, 0)
+    valueLabel.Size = UDim2.fromOffset(60, 24)
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+    local bar = Util.New("Frame", {
+        Parent = row,
+        Position = UDim2.fromOffset(0, 34),
+        Size = UDim2.new(1, 0, 0, 6),
+        BackgroundColor3 = theme:Get("Surface2"),
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(bar, 99)
+
+    local fill = Util.New("Frame", {
+        Parent = bar,
+        Size = UDim2.new(0, 0, 1, 0),
+        BackgroundColor3 = theme:Get("Accent"),
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(fill, 99)
+
+    local knob = Util.New("Frame", {
+        Parent = bar,
+        AnchorPoint = Vector2.new(.5, .5),
+        Position = UDim2.fromScale(0, .5),
+        Size = UDim2.fromOffset(14, 14),
+        BackgroundColor3 = theme:Get("Text"),
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(knob, 99)
+
+    local state = config.Default or minimum
+
+    local function set(value, fire)
+        state = math.clamp(value, minimum, maximum)
+
+        local alpha = (state - minimum) / (maximum - minimum)
+
+        fill.Size = UDim2.new(alpha, 0, 1, 0)
+        knob.Position = UDim2.new(alpha, 0, .5, 0)
+        valueLabel.Text = tostring(math.floor(state * 100) / 100)
+
+        if fire then
+            safeCall(config.Callback, state)
+        end
+    end
+
+    local function update(x)
+        local alpha = math.clamp(
+            (x - bar.AbsolutePosition.X)
+            / math.max(bar.AbsoluteSize.X, 1),
+            0,
+            1
+        )
+
+        set(
+            minimum + (maximum - minimum) * alpha,
+            true
+        )
+    end
+
+    bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+
+            update(input.Position.X)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+            and UserInputService:IsMouseButtonPressed(
+                Enum.UserInputType.MouseButton1
+            ) then
+
+            update(input.Position.X)
+        end
+    end)
+
+    set(state, false)
+
+    return {
+        Instance = row,
+        Get = function()
+            return state
+        end,
+        Set = function(_, value)
+            set(value, true)
+        end,
+    }
+end
+
+function Window:AddDropdown(config)
+    config = config or {}
+
+    local theme = self.Lib.Theme
+
+    local holder = Util.New("Frame", {
+        Parent = self.Body,
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = theme:Get("Surface"),
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+    })
+
+    Util.Corner(holder, 8)
+
+    local main = Util.New("TextButton", {
+        Parent = holder,
+        Size = UDim2.new(1, 0, 0, 40),
+        Text = config.Text or "Select",
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Font = Config.Font,
+        TextSize = 14,
+        TextColor3 = theme:Get("Text"),
+        BackgroundTransparency = 1,
+        AutoButtonColor = false,
+    })
+
+    Util.Padding(main, 12)
+
+    local list = Util.New("ScrollingFrame", {
+        Parent = holder,
+        Position = UDim2.fromOffset(0, 40),
+        Size = UDim2.new(1, 0, 0, 140),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 3,
+    })
+
+    local layout = Instance.new("UIListLayout")
+    layout.Parent = list
+
+    local selected = {}
+
+    local function refresh()
+        for _, child in ipairs(list:GetChildren()) do
+            if child:IsA("TextButton") then
+                child:Destroy()
+            end
+        end
+
+        for _, option in ipairs(config.Options or {}) do
+            local button = Util.New("TextButton", {
+                Parent = list,
+                Size = UDim2.new(1, -8, 0, 30),
+                Text = tostring(option),
+                Font = Config.Font,
+                TextSize = 13,
+                TextColor3 = theme:Get("Text"),
+                BackgroundColor3 = selected[option]
+                    and theme:Get("Surface2")
+                    or theme:Get("Surface"),
+                AutoButtonColor = false,
+            })
+
+            button.Activated:Connect(function()
+                if config.Multi then
+                    selected[option] = not selected[option]
+                else
+                    table.clear(selected)
+                    selected[option] = true
+                end
+
+                local output = {}
+
+                for key, value in pairs(selected) do
+                    if value then
+                        table.insert(output, key)
+                    end
+                end
+
+                main.Text = #output > 0
+                    and table.concat(output, ", ")
+                    or (config.Text or "Select")
+
+                safeCall(
+                    config.Callback,
+                    config.Multi and output or output[1]
+                )
+
+                if not config.Multi then
+                    holder.Size = UDim2.new(1, 0, 0, 40)
+                end
+
+                refresh()
+            end)
+        end
+
+        list.CanvasSize = UDim2.fromOffset(
+            0,
+            layout.AbsoluteContentSize.Y
+        )
+    end
+
+    main.Activated:Connect(function()
+        local open = holder.AbsoluteSize.Y > 40
+
+        holder.Size = UDim2.new(
+            1,
+            0,
+            0,
+            open and 40 or 180
+        )
+    end)
+
+    refresh()
+
+    return {
+        Instance = holder,
+        Get = function()
+            return selected
+        end,
+    }
+end
+
+function Window:AddRadioGroup(config)
+    config = config or {}
+
+    local theme = self.Lib.Theme
+    local selected = config.Default
+
+    local holder = Util.New("Frame", {
+        Parent = self.Body,
+        Size = UDim2.new(
+            1,
+            0,
+            0,
+            #(config.Options or {}) * 36
+        ),
+        BackgroundTransparency = 1,
+    })
+
+    local layout = Instance.new("UIListLayout")
+    layout.Parent = holder
+
+    for _, option in ipairs(config.Options or {}) do
+        local button = Util.New("TextButton", {
+            Parent = holder,
+            Size = UDim2.new(1, 0, 0, 32),
+            Text = tostring(option),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Font = Config.Font,
+            TextSize = 13,
+            TextColor3 = theme:Get("Text"),
+            BackgroundTransparency = 1,
+            AutoButtonColor = false,
+        })
+
+        local dot = Instance.new("Frame")
+        dot.Size = UDim2.fromOffset(18, 18)
+        dot.Position = UDim2.fromOffset(0, 7)
+        dot.BackgroundColor3 = theme:Get("Surface2")
+        dot.Parent = button
+        Util.Corner(dot, 99)
+
+        local inner = Instance.new("Frame")
+        inner.Size = UDim2.fromOffset(10, 10)
+        inner.Position = UDim2.fromOffset(4, 4)
+        inner.BackgroundColor3 = theme:Get("Accent")
+        inner.Parent = dot
+        Util.Corner(inner, 99)
+
+        local text = Util.Text(
+            button,
+            tostring(option),
+            Config.Font,
+            13,
+            theme:Get("Text")
+        )
+
+        text.Position = UDim2.fromOffset(28, 4)
+        text.Size = UDim2.new(1, -28, 0, 24)
+
+        inner.Visible = option == selected
+
+        button.Activated:Connect(function()
+            selected = option
+
+            for _, sibling in ipairs(holder:GetChildren()) do
+                if sibling:IsA("TextButton") then
+                    local d = sibling:FindFirstChildOfClass("Frame")
+                    local i = d and d:FindFirstChildOfClass("Frame")
+
+                    if i then
+                        i.Visible = sibling.Text == tostring(selected)
+                    end
+                end
+            end
+
+            safeCall(config.Callback, selected)
+        end)
+    end
+
+    return {
+        Instance = holder,
+        Get = function()
+            return selected
+        end,
+        Set = function(_, value)
+            selected = value
+        end,
+    }
+end
+
+function Window:AddProgress(config)
+    config = config or {}
+
+    local theme = self.Lib.Theme
+
+    local holder = Util.New("Frame", {
+        Parent = self.Body,
+        Size = UDim2.new(1, 0, 0, 44),
+        BackgroundTransparency = 1,
+    })
+
+    local label = Util.Text(
+        holder,
+        config.Text or "",
+        Config.Font,
+        13,
+        theme:Get("Text")
+    )
+
+    label.Size = UDim2.new(1, 0, 0, 16)
+
+    local bar = Util.New("Frame", {
+        Parent = holder,
+        Position = UDim2.fromOffset(0, 24),
+        Size = UDim2.new(1, 0, 0, 10),
+        BackgroundColor3 = theme:Get("Surface2"),
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(bar, 99)
+
+    local fill = Util.New("Frame", {
+        Parent = bar,
+        Size = UDim2.new(
+            math.clamp(config.Value or 0, 0, 1),
+            0,
+            1,
+            0
+        ),
+        BackgroundColor3 = theme:Get("Accent"),
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(fill, 99)
+
+    local function set(value)
+        value = math.clamp(value, 0, 1)
+
+        self.Lib.Animation:Tween(
+            fill,
+            {Size = UDim2.new(value, 0, 1, 0)}
+        )
+
+        label.Text = (config.Text or "")
+            .. " "
+            .. math.floor(value * 100)
+            .. "%"
+    end
+
+    set(config.Value or 0)
+
+    return {
+        Instance = holder,
+        Set = set,
+    }
+end
+
+function Window:AddTooltip(target, text)
+    assert(
+        target and target:IsA("GuiObject"),
+        "AstraUI: Tooltip target must be a GuiObject"
+    )
+
+    local theme = self.Lib.Theme
+
+    local tooltip = Util.New("TextLabel", {
+        Parent = target,
+        Visible = false,
+        AutomaticSize = Enum.AutomaticSize.XY,
+        Text = text or "",
+        Font = Config.Font,
+        TextSize = 12,
+        TextColor3 = theme:Get("Text"),
+        BackgroundColor3 = theme:Get("Surface2"),
+        BorderSizePixel = 0,
+        ZIndex = 100,
+    })
+
+    Util.Padding(tooltip, 7)
+    Util.Corner(tooltip, 7)
+
+    target.MouseEnter:Connect(function()
+        tooltip.Visible = true
+    end)
+
+    target.MouseLeave:Connect(function()
+        tooltip.Visible = false
+    end)
+
+    return tooltip
+end
+
+function Window:AddColorPicker(config)
+    config = config or {}
+
+    local input = self:AddInput({
+        Placeholder = config.Text or "Hex (#RRGGBB)"
+    })
+
+    input.Text = config.Default or "#6495ED"
+
+    local function parse(hex)
+        hex = tostring(hex):gsub("#", "")
+
+        if #hex ~= 6 then
+            return nil
+        end
+
+        local number = tonumber(hex, 16)
+
+        if not number then
+            return nil
+        end
+
+        return Color3.fromRGB(
+            math.floor(number / 65536) % 256,
+            math.floor(number / 256) % 256,
+            number % 256
+        )
+    end
+
+    input.FocusLost:Connect(function()
+        local color = parse(input.Text)
+
+        if color then
+            safeCall(config.Callback, color)
+        else
+            input.TextColor3 = self.Lib.Theme:Get("Error")
+        end
+    end)
+
+    return input
+end
+
+function Window:AddTabGroup(config)
+    config = config or {}
+
+    local theme = self.Lib.Theme
+
+    local holder = Util.New("Frame", {
+        Parent = self.Body,
+        Size = UDim2.new(1, 0, 0, 38),
+        BackgroundTransparency = 1,
+    })
+
+    local layout = Instance.new("UIListLayout")
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.Padding = UDim.new(0, 5)
+    layout.Parent = holder
+
+    local pages = {}
+
+    local function add(name)
+        local button = Util.New("TextButton", {
+            Parent = holder,
+            Size = UDim2.fromOffset(100, 34),
+            Text = name,
+            Font = Config.Font,
+            TextSize = 13,
+            TextColor3 = theme:Get("Text"),
+            BackgroundColor3 = theme:Get("Surface"),
+            AutoButtonColor = false,
+        })
+
+        Util.Corner(button, 7)
+
+        local page = Util.New("Frame", {
+            Parent = self.Body,
+            Visible = false,
+            Size = UDim2.new(1, 0, 0, 10),
+            BackgroundTransparency = 1,
+        })
+
+        local pageLayout = Instance.new("UIListLayout")
+        pageLayout.Parent = page
+        pageLayout.Padding = UDim.new(0, Config.Spacing)
+
+        button.Activated:Connect(function()
+            for _, otherPage in pairs(pages) do
+                otherPage.Visible = false
+            end
+
+            page.Visible = true
+        end)
+
+        pages[name] = page
+
+        return page
+    end
+
+    return {
+        Instance = holder,
+        Add = add,
+        Pages = pages,
+    }
+end
+
+-- =========================================================
+-- CORE
+-- =========================================================
+
+local Core = {}
+Core.__index = Core
+
+function Core.new(lib)
+    return setmetatable({
+        Lib = lib,
+        Gui = nil,
+        Blur = nil,
+    }, Core)
+end
+
+function Core:_ensureGui()
+    if self.Gui and self.Gui.Parent then
+        return self.Gui
+    end
+
+    local playerGui = Util.GetPlayerGui()
+
+    assert(
+        playerGui,
+        "AstraUI must run on the client"
+    )
+
+    local gui = Instance.new("ScreenGui")
+
+    gui.Name = "AstraUI"
+    gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.DisplayOrder = 100
+
+    gui.Parent = playerGui
+
+    self.Gui = gui
+
+    return gui
+end
+
+--[[
+    CreateWindow(config)
+    Returns Window object.
+]]
+function Core:CreateWindow(config)
+    config = config or {}
+
+    local gui = self:_ensureGui()
+    local theme = self.Lib.Theme
+
+    local root = Instance.new("Frame")
+
+    root.Name = config.Name or "Window"
+    root.Size = config.Size or UDim2.fromOffset(620, 430)
+    root.Position = config.Position or UDim2.fromScale(.5, .5)
+    root.AnchorPoint = Vector2.new(.5, .5)
+    root.BackgroundColor3 = theme:Get("Background")
+    root.BorderSizePixel = 0
+    root.ClipsDescendants = true
+    root.Parent = gui
+    root.ZIndex = 1
+
+    Util.Corner(
+        root,
+        config.CornerRadius or Config.CornerRadius
+    )
+
+    local shadow = Instance.new("ImageLabel")
+
+    shadow.Name = "Shadow"
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://1316045217"
+    shadow.ImageTransparency = .45
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+    shadow.Size = UDim2.new(1, 40, 1, 40)
+    shadow.Position = UDim2.fromOffset(-20, -20)
+    shadow.ZIndex = 0
+    shadow.Parent = root
+
+    local header = Util.New("Frame", {
+        Parent = root,
+        Size = UDim2.new(1, 0, 0, 48),
+        BackgroundColor3 = theme:Get("Surface"),
+        BorderSizePixel = 0,
+    })
+
+    local title = Util.Text(
+        header,
+        config.Title or "AstraUI",
+        Config.Font,
+        16,
+        theme:Get("Text")
+    )
+
+    title.Position = UDim2.fromOffset(16, 0)
+    title.Size = UDim2.new(1, -120, 1, 0)
+
+    local min = Util.New("TextButton", {
+        Parent = header,
+        Text = "—",
+        Font = Config.Font,
+        TextSize = 18,
+        TextColor3 = theme:Get("Text"),
+        BackgroundTransparency = 1,
+        Size = UDim2.fromOffset(40, 48),
+        Position = UDim2.new(1, -84, 0, 0),
+    })
+
+    local close = Util.New("TextButton", {
+        Parent = header,
+        Text = "×",
+        Font = Config.Font,
+        TextSize = 20,
+        TextColor3 = theme:Get("Text"),
+        BackgroundTransparency = 1,
+        Size = UDim2.fromOffset(40, 48),
+        Position = UDim2.new(1, -42, 0, 0),
+    })
+
+    local body = Util.New("ScrollingFrame", {
+        Parent = root,
+        Position = UDim2.fromOffset(0, 48),
+        Size = UDim2.new(1, 0, 1, -48),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 4,
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new(),
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+    })
+
+    Util.Padding(body, 12)
+
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, Config.Spacing)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = body
+
+    local resizeGrip = Util.New("TextButton", {
+        Parent = root,
+        Size = UDim2.fromOffset(18, 18),
+        Position = UDim2.new(1, -18, 1, -18),
+        Text = "",
+        BackgroundTransparency = 1,
+        AutoButtonColor = false,
+        ZIndex = 10,
+    })
+
+    Util.MakeDraggable(header, root)
+
+    local camera = workspace.CurrentCamera
+    local viewport = camera
+        and camera.ViewportSize
+        or Vector2.new(1280, 720)
+
+    local maxWidth = math.max(320, viewport.X - 24)
+    local maxHeight = math.max(260, viewport.Y - 24)
+
+    Util.MakeResizable(
+        resizeGrip,
+        root,
+        Vector2.new(320, 260),
+        Vector2.new(maxWidth, maxHeight)
+    )
+
+    local window = Window.new(
+        self.Lib,
+        root,
+        body,
+        header,
+        {
+            Title = title,
+            Min = min,
+            Close = close,
+            Resize = resizeGrip,
+            Header = header,
+        }
+    )
+
+    min.Activated:Connect(function()
+        window:SetMinimized(not window.Minimized)
+    end)
+
+    close.Activated:Connect(function()
+        window:Destroy()
+    end)
+
+    local themeConnection = self.Lib.Theme.Changed.Event:Connect(function()
+        if root.Parent then
+            window:ApplyTheme()
+        end
+    end)
+
+    window._ThemeConnection = themeConnection
+
+    if config.Blur then
+        local blur = Instance.new("BlurEffect")
+
+        blur.Name = "AstraUI_Blur"
+        blur.Size = math.clamp(
+            config.BlurSize or 8,
+            0,
+            24
+        )
+        blur.Parent = Lighting
+
+        self.Blur = blur
+    end
+
+    return window
+end
+
+function Window:Destroy()
+    if self._ThemeConnection then
+        self._ThemeConnection:Disconnect()
+        self._ThemeConnection = nil
+    end
+
+    if self.Instance then
+        self.Instance:Destroy()
+        self.Instance = nil
+    end
+end
+
+--[[
+    Notify(config)
+    Type: Toast / Success / Error / Warning
+]]
+function Core:Notify(config)
+    config = config or {}
+
+    local gui = self:_ensureGui()
+    local theme = self.Lib.Theme
+    local animation = self.Lib.Animation
+
+    local holder = gui:FindFirstChild("Notifications")
+
+    if not holder then
+        holder = Util.New("Frame", {
+            Name = "Notifications",
+            Parent = gui,
+            BackgroundTransparency = 1,
+            AnchorPoint = Vector2.new(1, 1),
+            Position = UDim2.new(1, -18, 1, -18),
+            Size = UDim2.fromOffset(330, 400),
+        })
+
+        local list = Instance.new("UIListLayout")
+        list.VerticalAlignment = Enum.VerticalAlignment.Bottom
+        list.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        list.Padding = UDim.new(0, 8)
+        list.Parent = holder
+    end
+
+    local card = Util.New("Frame", {
+        Parent = holder,
+        Size = UDim2.new(1, 0, 0, 76),
+        BackgroundColor3 = theme:Get("Surface"),
+        BorderSizePixel = 0,
+    })
+
+    Util.Corner(card, 10)
+    Util.Stroke(card, theme:Get("Border"), .25)
+
+    local kind = config.Type or "Toast"
+
+    local accent =
+        kind == "Success" and theme:Get("Success")
+        or kind == "Error" and theme:Get("Error")
+        or kind == "Warning" and theme:Get("Warning")
+        or theme:Get("Accent")
+
+    local bar = Util.New("Frame", {
+        Parent = card,
+        Size = UDim2.fromOffset(4, 76),
+        BackgroundColor3 = accent,
+        BorderSizePixel = 0,
+    })
+
+    local heading = Util.Text(
+        card,
+        config.Title or kind,
+        Config.Font,
+        14,
+        theme:Get("Text")
+    )
+
+    heading.Position = UDim2.fromOffset(16, 10)
+    heading.Size = UDim2.new(1, -28, 0, 20)
+
+    local description = Util.Text(
+        card,
+        config.Content or "",
+        Config.Font,
+        12,
+        theme:Get("Muted")
+    )
+
+    description.Position = UDim2.fromOffset(16, 32)
+    description.Size = UDim2.new(1, -28, 0, 34)
+
+    task.delay(config.Duration or 3, function()
+        if card and card.Parent then
+            animation:Tween(
+                card,
+                {BackgroundTransparency = 1}
+            )
+
+            task.wait(animation.Duration)
+
+            if card then
+                card:Destroy()
+            end
+        end
+    end)
+
+    return card
+end
+
+function Core:Destroy()
+    if self.Gui then
+        self.Gui:Destroy()
+        self.Gui = nil
+    end
+
+    if self.Blur then
+        self.Blur:Destroy()
+        self.Blur = nil
+    end
+end
+
+-- =========================================================
+-- PUBLIC API
+-- =========================================================
+
+--[[
+    AstraUI.new(config?)
+    Creates a new AstraUI instance.
+
+    Returns:
+        AstraUI object
+]]
+function AstraUI.new(config)
+    config = config or {}
+
+    local self = setmetatable({}, AstraUI)
+
+    self.Config = config
+    self.Theme = Theme.new(config.Theme)
+    self.Animation = Animation.new(config.Animation)
+    self.Core = Core.new(self)
+    self.Windows = {}
+
+    return self
+end
+
+--[[
+    UI:CreateWindow(config)
+    Creates and returns a Window.
+]]
+function AstraUI:CreateWindow(config)
+    local window = self.Core:CreateWindow(config)
+
+    table.insert(self.Windows, window)
+
+    return window
+end
+
+--[[
+    UI:SetTheme("Dark")
+    UI:SetTheme("Light")
+    UI:SetTheme(customPalette)
+]]
+function AstraUI:SetTheme(theme)
+    self.Theme:Set(theme)
+end
+
+--[[
+    UI:Notify(config)
+    Creates an auto-dismissing notification.
+]]
+function AstraUI:Notify(config)
+    return self.Core:Notify(config)
+end
+
+function AstraUI:Destroy()
+    self.Core:Destroy()
+
+    for _, window in ipairs(self.Windows) do
+        if window and window.Destroy then
+            pcall(function()
+                window:Destroy()
+            end)
+        end
+    end
+
+    table.clear(self.Windows)
+    self.Theme:Destroy()
+end
+
+return AstraUI
