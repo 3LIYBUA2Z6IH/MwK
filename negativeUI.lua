@@ -143,18 +143,18 @@ function Library:Window(options)
     })
 
     --// Close
-    local Close = Create("TextButton", {
-        Name = "Close",
-        Size = UDim2.fromOffset(30, 30),
-        Position = UDim2.new(1, -35, 0, 14),
-        BackgroundTransparency = 1,
-        Text = "×",
-        TextColor3 = Color3.fromRGB(150, 150, 160),
-        TextSize = 20,
-        Font = Enum.Font.Gotham,
-        AutoButtonColor = false,
-        Parent = Header
-    })
+	local Close = Create("TextButton", {
+    	Name = "Close",
+    	Size = UDim2.fromOffset(38, 38),
+    	Position = UDim2.new(1, -44, 0, 10),
+    	BackgroundTransparency = 1,
+    	Text = "×",
+    	TextColor3 = Color3.fromRGB(170, 170, 180),
+    	TextSize = 26,
+    	Font = Enum.Font.GothamMedium,
+    	AutoButtonColor = false,
+    	Parent = Header
+	})
 
     --// Body
     local Body = Create("Frame", {
@@ -270,267 +270,253 @@ function Library:Window(options)
     end)
 
     --// Page
-    function WindowObject:Page(pageOptions)
-        pageOptions = pageOptions or {}
+    --// Page
+	function WindowObject:Page(pageOptions)
+    pageOptions = pageOptions or {}
 
-        local PageObject = {
-            Name = pageOptions.Name or "Page",
-            Sections = {}
-        }
+    local PageObject = {
+        Name = pageOptions.Name or "Page",
+        Sections = {}
+    }
 
-        local PageName = PageObject.Name
-        local Letter = string.upper(string.sub(PageName, 1, 1))
+    local PageName = PageObject.Name
+    local Letter = string.upper(string.sub(PageName, 1, 1))
 
-        --// Page Button
-        local PageButton = Create("TextButton", {
-            Name = PageName,
-            Size = UDim2.fromOffset(38, 38),
-            BackgroundColor3 = Color3.fromRGB(23, 23, 27),
-            BorderSizePixel = 0,
-            Text = Letter,
-            TextColor3 = Color3.fromRGB(125, 125, 135),
-            TextSize = 13,
-            Font = Enum.Font.GothamBold,
-            AutoButtonColor = false,
-            Parent = PageList
-        })
+    --// Page Button
+    local PageButton = Create("TextButton", {
+        Name = "PageButton_" .. PageName,
+        Size = UDim2.fromOffset(38, 38),
+        BackgroundColor3 = Color3.fromRGB(23, 23, 27),
+        BorderSizePixel = 0,
+        Text = Letter,
+        TextColor3 = Color3.fromRGB(125, 125, 135),
+        TextSize = 13,
+        Font = Enum.Font.GothamBold,
+        AutoButtonColor = false,
+        Parent = PageList
+    })
 
-        Corner(PageButton, 5)
-        Stroke(PageButton, 0.93)
+    Corner(PageButton, 5)
+    Stroke(PageButton, 0.93)
 
-        --// Page Content
-        local PageFrame = Create("ScrollingFrame", {
-            Name = PageName,
-            Size = UDim2.new(1, -20, 1, -20),
-            Position = UDim2.fromOffset(10, 10),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ScrollBarThickness = 2,
-            ScrollBarImageTransparency = 0.7,
-            CanvasSize = UDim2.new(0, 0, 0, 0),
-            Visible = false,
-            Parent = Content
-        })
+    --// Page Frame
+    local PageFrame = Create("ScrollingFrame", {
+        Name = "Page_" .. PageName,
+        Size = UDim2.new(1, -20, 1, -20),
+        Position = UDim2.fromOffset(10, 10),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 2,
+        ScrollBarImageTransparency = 0.7,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        Visible = false,
+        Parent = Content
+    })
 
-        local LeftColumn = Create("Frame", {
-            Name = "Left",
-            Size = UDim2.new(0.5, -6, 1, 0),
-            BackgroundTransparency = 1,
-            Parent = PageFrame
-        })
+    local LeftColumn = Create("Frame", {
+        Name = "Left",
+        Size = UDim2.new(0.5, -6, 1, 0),
+        BackgroundTransparency = 1,
+        Parent = PageFrame
+    })
 
-        local RightColumn = Create("Frame", {
-            Name = "Right",
-            Size = UDim2.new(0.5, -6, 1, 0),
-            Position = UDim2.new(0.5, 6, 0, 0),
-            BackgroundTransparency = 1,
-            Parent = PageFrame
-        })
+    local RightColumn = Create("Frame", {
+        Name = "Right",
+        Size = UDim2.new(0.5, -6, 1, 0),
+        Position = UDim2.new(0.5, 6, 0, 0),
+        BackgroundTransparency = 1,
+        Parent = PageFrame
+    })
 
-        local LeftLayout = Create("UIListLayout", {
-            Padding = UDim.new(0, 8),
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Parent = LeftColumn
-        })
+    local LeftLayout = Create("UIListLayout", {
+        Padding = UDim.new(0, 8),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Parent = LeftColumn
+    })
 
-        local RightLayout = Create("UIListLayout", {
-            Padding = UDim.new(0, 8),
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Parent = RightColumn
-        })
+    local RightLayout = Create("UIListLayout", {
+        Padding = UDim.new(0, 8),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Parent = RightColumn
+    })
 
-        local function UpdateCanvas()
-            local leftHeight = LeftLayout.AbsoluteContentSize.Y
-            local rightHeight = RightLayout.AbsoluteContentSize.Y
+    local function UpdateCanvas()
+        local leftHeight = LeftLayout.AbsoluteContentSize.Y
+        local rightHeight = RightLayout.AbsoluteContentSize.Y
 
-            PageFrame.CanvasSize = UDim2.fromOffset(
-                0,
-                math.max(leftHeight, rightHeight) + 10
-            )
-        end
-
-        LeftLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
-        RightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
-
-        --// Select Page
-        local function SelectPage()
-            for _, page in ipairs(Library.Pages) do
-                page.Frame.Visible = false
-
-                Tween(page.Button, {
-                    BackgroundColor3 = Color3.fromRGB(23, 23, 27)
-                }, 0.12)
-
-                page.Button.TextColor3 = Color3.fromRGB(125, 125, 135)
-            end
-
-            PageFrame.Visible = true
-
-            Tween(PageButton, {
-                BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-            }, 0.12)
-
-            PageButton.TextColor3 = Color3.fromRGB(235, 235, 240)
-
-            Library.CurrentPage = PageObject
-        end
-
-        PageButton.MouseButton1Click:Connect(SelectPage)
-
-        --// Tooltip
-        PageButton.MouseEnter:Connect(function()
-            if Library.CurrentPage ~= PageObject then
-                Tween(PageButton, {
-                    BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-                }, 0.1)
-            end
-        end)
-
-        PageButton.MouseLeave:Connect(function()
-            if Library.CurrentPage ~= PageObject then
-                Tween(PageButton, {
-                    BackgroundColor3 = Color3.fromRGB(23, 23, 27)
-                }, 0.1)
-            end
-        end)
-
-        --// Section
-        function PageObject:Section(sectionOptions)
-            sectionOptions = sectionOptions or {}
-
-            local SectionObject = {}
-
-            local SectionName = sectionOptions.Name or "Section"
-            local Side = sectionOptions.Side or 1
-
-            local ParentColumn
-
-            if Side == 2 then
-                ParentColumn = RightColumn
-            else
-                ParentColumn = LeftColumn
-            end
-
-            local SectionFrame = Create("Frame", {
-                Name = SectionName,
-                Size = UDim2.new(1, 0, 0, 50),
-                BackgroundColor3 = Color3.fromRGB(19, 19, 23),
-                BorderSizePixel = 0,
-                AutomaticSize = Enum.AutomaticSize.Y,
-                Parent = ParentColumn
-            })
-
-            Corner(SectionFrame, 5)
-            Stroke(SectionFrame, 0.93)
-
-            --// Section Header
-            local SectionHeader = Create("TextLabel", {
-                Name = "Header",
-                Size = UDim2.new(1, -20, 0, 34),
-                Position = UDim2.fromOffset(10, 0),
-                BackgroundTransparency = 1,
-                Text = SectionName,
-                TextColor3 = Color3.fromRGB(220, 220, 225),
-                TextSize = 12,
-                Font = Enum.Font.GothamSemibold,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                Parent = SectionFrame
-            })
-
-            local Elements = Create("Frame", {
-                Name = "Elements",
-                Size = UDim2.new(1, -16, 0, 0),
-                Position = UDim2.fromOffset(8, 34),
-                BackgroundTransparency = 1,
-                AutomaticSize = Enum.AutomaticSize.Y,
-                Parent = SectionFrame
-            })
-
-            local ElementLayout = Create("UIListLayout", {
-                Padding = UDim.new(0, 5),
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                Parent = Elements
-            })
-
-            local Padding = Create("UIPadding", {
-                PaddingBottom = UDim.new(0, 8),
-                Parent = Elements
-            })
-
-            --// Button
-            function SectionObject:Button(buttonOptions)
-                buttonOptions = buttonOptions or {}
-
-                local ButtonObject = {}
-
-                local ButtonName = buttonOptions.Name or "Button"
-                local Callback = buttonOptions.Callback or function() end
-
-                local Button = Create("TextButton", {
-                    Name = ButtonName,
-                    Size = UDim2.new(1, 0, 0, 32),
-                    BackgroundColor3 = Color3.fromRGB(25, 25, 29),
-                    BorderSizePixel = 0,
-                    Text = ButtonName,
-                    TextColor3 = Color3.fromRGB(195, 195, 200),
-                    TextSize = 11,
-                    Font = Enum.Font.GothamMedium,
-                    AutoButtonColor = false,
-                    Parent = Elements
-                })
-
-                Corner(Button, 4)
-                Stroke(Button, 0.94)
-
-                Button.MouseEnter:Connect(function()
-                    Tween(Button, {
-                        BackgroundColor3 = Color3.fromRGB(34, 34, 40)
-                    }, 0.1)
-                end)
-
-                Button.MouseLeave:Connect(function()
-                    Tween(Button, {
-                        BackgroundColor3 = Color3.fromRGB(25, 25, 29)
-                    }, 0.1)
-                end)
-
-                Button.MouseButton1Click:Connect(function()
-                    Callback()
-                end)
-
-                ButtonObject.Instance = Button
-
-                return ButtonObject
-            end
-
-            table.insert(PageObject.Sections, SectionObject)
-
-            return SectionObject
-        end
-
-        table.insert(Library.Pages, {
-            Object = PageObject,
-            Button = PageButton,
-            Frame = PageFrame
-        })
-
-        PageList.CanvasSize = UDim2.fromOffset(
+        PageFrame.CanvasSize = UDim2.fromOffset(
             0,
-            PageLayout.AbsoluteContentSize.Y + 10
+            math.max(leftHeight, rightHeight) + 20
         )
-
-        --// First page
-        if #Library.Pages == 1 then
-            SelectPage()
-        end
-
-        return PageObject
     end
 
-    WindowObject.Instance = Main
-    WindowObject.ScreenGui = ScreenGui
+    LeftLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
+    RightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
 
-    return WindowObject
+    --// Register page FIRST
+    local PageData = {
+        Object = PageObject,
+        Button = PageButton,
+        Frame = PageFrame
+    }
+
+    table.insert(Library.Pages, PageData)
+
+    --// Select Page
+    local function SelectPage()
+        for _, page in ipairs(Library.Pages) do
+            if page.Frame and page.Frame.Parent then
+                page.Frame.Visible = false
+            end
+
+            if page.Button and page.Button.Parent then
+                page.Button.BackgroundColor3 = Color3.fromRGB(23, 23, 27)
+                page.Button.TextColor3 = Color3.fromRGB(125, 125, 135)
+            end
+        end
+
+        PageFrame.Visible = true
+        PageButton.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+        PageButton.TextColor3 = Color3.fromRGB(235, 235, 240)
+
+        Library.CurrentPage = PageObject
+    end
+
+    PageButton.MouseButton1Click:Connect(SelectPage)
+
+    PageButton.MouseEnter:Connect(function()
+        if Library.CurrentPage ~= PageObject then
+            Tween(PageButton, {
+                BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+            }, 0.1)
+        end
+    end)
+
+    PageButton.MouseLeave:Connect(function()
+        if Library.CurrentPage ~= PageObject then
+            Tween(PageButton, {
+                BackgroundColor3 = Color3.fromRGB(23, 23, 27)
+            }, 0.1)
+        end
+    end)
+
+    --// Update sidebar
+    PageList.CanvasSize = UDim2.fromOffset(
+        0,
+        PageLayout.AbsoluteContentSize.Y + 10
+    )
+
+    --// First page
+    if #Library.Pages == 1 then
+        SelectPage()
+    end
+
+    --// Section
+    function PageObject:Section(sectionOptions)
+        sectionOptions = sectionOptions or {}
+
+        local SectionObject = {}
+
+        local SectionName = sectionOptions.Name or "Section"
+        local Side = sectionOptions.Side or 1
+
+        local ParentColumn = Side == 2 and RightColumn or LeftColumn
+
+        local SectionFrame = Create("Frame", {
+            Name = SectionName,
+            Size = UDim2.new(1, 0, 0, 50),
+            BackgroundColor3 = Color3.fromRGB(19, 19, 23),
+            BorderSizePixel = 0,
+            AutomaticSize = Enum.AutomaticSize.Y,
+            Parent = ParentColumn
+        })
+
+        Corner(SectionFrame, 5)
+        Stroke(SectionFrame, 0.93)
+
+        local SectionHeader = Create("TextLabel", {
+            Name = "Header",
+            Size = UDim2.new(1, -20, 0, 34),
+            Position = UDim2.fromOffset(10, 0),
+            BackgroundTransparency = 1,
+            Text = SectionName,
+            TextColor3 = Color3.fromRGB(220, 220, 225),
+            TextSize = 12,
+            Font = Enum.Font.GothamSemibold,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = SectionFrame
+        })
+
+        local Elements = Create("Frame", {
+            Name = "Elements",
+            Size = UDim2.new(1, -16, 0, 0),
+            Position = UDim2.fromOffset(8, 34),
+            BackgroundTransparency = 1,
+            AutomaticSize = Enum.AutomaticSize.Y,
+            Parent = SectionFrame
+        })
+
+        local ElementLayout = Create("UIListLayout", {
+            Padding = UDim.new(0, 5),
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Parent = Elements
+        })
+
+        Create("UIPadding", {
+            PaddingBottom = UDim.new(0, 8),
+            Parent = Elements
+        })
+
+        function SectionObject:Button(buttonOptions)
+            buttonOptions = buttonOptions or {}
+
+            local ButtonObject = {}
+
+            local Button = Create("TextButton", {
+                Name = buttonOptions.Name or "Button",
+                Size = UDim2.new(1, 0, 0, 32),
+                BackgroundColor3 = Color3.fromRGB(25, 25, 29),
+                BorderSizePixel = 0,
+                Text = buttonOptions.Name or "Button",
+                TextColor3 = Color3.fromRGB(195, 195, 200),
+                TextSize = 11,
+                Font = Enum.Font.GothamMedium,
+                AutoButtonColor = false,
+                Parent = Elements
+            })
+
+            Corner(Button, 4)
+            Stroke(Button, 0.94)
+
+            Button.MouseEnter:Connect(function()
+                Tween(Button, {
+                    BackgroundColor3 = Color3.fromRGB(34, 34, 40)
+                }, 0.1)
+            end)
+
+            Button.MouseLeave:Connect(function()
+                Tween(Button, {
+                    BackgroundColor3 = Color3.fromRGB(25, 25, 29)
+                }, 0.1)
+            end)
+
+            Button.MouseButton1Click:Connect(function()
+                if buttonOptions.Callback then
+                    buttonOptions.Callback()
+                end
+            end)
+
+            ButtonObject.Instance = Button
+
+            return ButtonObject
+        end
+
+        table.insert(PageObject.Sections, SectionObject)
+
+        return SectionObject
+    end
+
+    return PageObject
 end
 
 return Library
