@@ -123,29 +123,79 @@ function NovaUI:AddPage(name, icon)
     function page:AddLabel(text)
         return New("TextLabel", {Parent = page.Frame, Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = text, TextColor3 = C.SubText, TextSize = 9, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left})
     end
+
     function page:AddToggle(text, default, callback, options)
         options = options or {}
+
         local enabled = default or false
-        local bindEnabled = options.keybind == true
+        local bindEnabled = options.keybind == true or options.KEYBIND == true
+        local colorEnabled = options.colorpicker == true or options.COLORPICKER == true
         local currentKey = nil
         local recording = false
+        local currentColor = options.color or options.Color or C.Accent
         local holder = New("Frame", {Parent = page.Frame, Size = UDim2.new(1, 0, 0, 25), BackgroundTransparency = 1, BorderSizePixel = 0})
-        local function updateToggle() if callback then callback(enabled) end end
-        local label = New("TextLabel", {Parent = holder, Size = UDim2.new(0, 110, 1, 0), Position = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = enabled and C.Text or C.SubText, TextSize = 12, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center, ZIndex = 2})
+
+        local function updateToggle()
+            if callback then callback(enabled) end
+        end
+
+        local label = New("TextLabel", {Parent = holder, Size = UDim2.new(0, 92, 1, 0), Position = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = enabled and C.Text or C.SubText, TextSize = 12, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center, ZIndex = 2})
+
         local toggleButton = New("TextButton", {Parent = holder, Size = UDim2.fromOffset(21, 21), Position = UDim2.new(1, -21, 0.5, -10.5), BackgroundColor3 = C.Element, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 8})
         Corner(toggleButton, 4)
-        local redSquare = New("Frame", {Parent = toggleButton, BackgroundColor3 = C.Accent, Position = UDim2.new(0.5, 0, 0.5, 0), Size = enabled and UDim2.fromOffset(14, 14) or UDim2.fromOffset(0, 0), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 9})
+
+        local redSquare = New("Frame", {Parent = toggleButton, BackgroundColor3 = currentColor, Position = UDim2.new(0.5, 0, 0.5, 0), Size = enabled and UDim2.fromOffset(14, 14) or UDim2.fromOffset(0, 0), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 9})
         Corner(redSquare, 2)
+
         local function refreshToggle()
-            TweenService:Create(redSquare, TweenInfo.new(0.15), {Size = enabled and UDim2.fromOffset(14, 14) or UDim2.fromOffset(0, 0)}):Play()
+            TweenService:Create(redSquare, TweenInfo.new(0.15), {Size = enabled and UDim2.fromOffset(14, 14) or UDim2.fromOffset(0, 0), BackgroundColor3 = currentColor}):Play()
             TweenService:Create(label, TweenInfo.new(0.15), {TextColor3 = enabled and C.Text or C.SubText}):Play()
             updateToggle()
         end
-        toggleButton.MouseButton1Click:Connect(function() enabled = not enabled refreshToggle() end)
+
+        toggleButton.MouseButton1Click:Connect(function()
+            enabled = not enabled
+            refreshToggle()
+        end)
+
+        if colorEnabled then
+            local colorButton = New("TextButton", {Parent = holder, Size = UDim2.fromOffset(18, 18), Position = UDim2.new(1, -47, 0.5, -9), BackgroundColor3 = currentColor, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 10})
+            Corner(colorButton, 4)
+            Stroke(colorButton)
+
+            local popup = New("Frame", {Parent = holder, Size = UDim2.fromOffset(128, 78), Position = UDim2.new(1, -132, 1, 3), BackgroundColor3 = C.Top, BorderSizePixel = 0, Visible = false, ZIndex = 20})
+            Corner(popup, 5)
+            Stroke(popup)
+
+            local palette = {
+                Color3.fromRGB(235, 92, 96), Color3.fromRGB(255, 140, 80), Color3.fromRGB(245, 210, 70), Color3.fromRGB(95, 210, 120),
+                Color3.fromRGB(70, 180, 255), Color3.fromRGB(110, 100, 245), Color3.fromRGB(205, 100, 255), Color3.fromRGB(240, 240, 240),
+                Color3.fromRGB(80, 80, 88), Color3.fromRGB(20, 20, 24), Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 80, 150)
+            }
+
+            New("UIGridLayout", {Parent = popup, CellSize = UDim2.fromOffset(18, 18), CellPadding = UDim2.fromOffset(4, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder})
+            for _, color in ipairs(palette) do
+                local swatch = New("TextButton", {Parent = popup, Size = UDim2.fromOffset(18, 18), BackgroundColor3 = color, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 21})
+                Corner(swatch, 4)
+                swatch.MouseButton1Click:Connect(function()
+                    currentColor = color
+                    colorButton.BackgroundColor3 = currentColor
+                    redSquare.BackgroundColor3 = currentColor
+                    popup.Visible = false
+                end)
+            end
+
+            colorButton.MouseButton1Click:Connect(function()
+                popup.Visible = not popup.Visible
+            end)
+        end
+
         if bindEnabled then
-            local bindButton = New("TextButton", {Parent = holder, Size = UDim2.fromOffset(34, 20), Position = UDim2.new(1, -75, 0.5, -10), BackgroundColor3 = C.Element, BorderSizePixel = 0, Text = "None", TextColor3 = C.SubText, TextSize = 8, Font = Enum.Font.GothamMedium, AutoButtonColor = false, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 10})
+            local bindX = colorEnabled and -89 or -47
+            local bindButton = New("TextButton", {Parent = holder, Size = UDim2.fromOffset(34, 20), Position = UDim2.new(1, bindX, 0.5, -10), BackgroundColor3 = C.Element, BorderSizePixel = 0, Text = "None", TextColor3 = C.SubText, TextSize = 8, Font = Enum.Font.GothamMedium, AutoButtonColor = false, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 10})
             Corner(bindButton, 4)
             Stroke(bindButton)
+
             bindButton.MouseButton1Click:Connect(function()
                 if recording then return end
                 recording = true
@@ -153,6 +203,7 @@ function NovaUI:AddPage(name, icon)
                 bindButton.TextSize = 7
                 bindButton.TextColor3 = C.Text
             end)
+
             UIS.InputBegan:Connect(function(input, gameProcessed)
                 if recording then
                     if input.KeyCode == Enum.KeyCode.Backspace then
@@ -178,7 +229,27 @@ function NovaUI:AddPage(name, icon)
                 end
             end)
         end
-        return {Set = function(_, state) enabled = state refreshToggle() end, Get = function() return enabled end, GetKey = function() return currentKey end}
+
+        return {
+            Set = function(_, state)
+                enabled = state
+                refreshToggle()
+            end,
+            Get = function()
+                return enabled
+            end,
+            GetKey = function()
+                return currentKey
+            end,
+            SetColor = function(_, color)
+                if typeof(color) ~= "Color3" then return end
+                currentColor = color
+                redSquare.BackgroundColor3 = color
+            end,
+            GetColor = function()
+                return currentColor
+            end
+        }
     end
 
     function page:AddButton(text, callback)
@@ -256,8 +327,8 @@ print("hello world")
 local ExampleWindow = NovaUI.new("NovaUI Example")
 local ExamplePage = ExampleWindow:AddPage("Main", "M")
 ExamplePage:AddTitle("NovaUI Test")
-ExamplePage:AddLabel("[UPDATE MARKER] Slider value box: 30x18 | Toggle: 21x21 | Keybind: 34x20")
-ExamplePage:AddToggle("Test Toggle", false, function(state) print("Toggle:", state) end, {keybind = true})
+ExamplePage:AddLabel("[UPDATE MARKER] Toggle supports COLORPICKER/KEYBIND true or false")
+ExamplePage:AddToggle("Test Toggle", false, function(state) print("Toggle:", state) end, {colorpicker = true, keybind = true})
 ExamplePage:AddButton("Test Button", function() print("Button clicked") end)
 ExamplePage:AddSlider("Slider", 0, 100, 50, function(value) print("Slider:", value) end)
 return NovaUI
