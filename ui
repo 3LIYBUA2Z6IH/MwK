@@ -54,6 +54,23 @@ local function insidePoint(guiObject, p)
     return p.X >= pos.X and p.X <= pos.X + size.X and p.Y >= pos.Y and p.Y <= pos.Y + size.Y
 end
 
+local function placePopup(popup, button)
+    local p = button.AbsolutePosition
+    local s = button.AbsoluteSize
+    local camera = workspace.CurrentCamera
+    local viewport = camera and camera.ViewportSize or Vector2.new(800, 600)
+    local width, height = 210, 225
+    local x = p.X + s.X - width
+    local y = p.Y + s.Y + 5
+
+    if x < 5 then x = 5 end
+    if x + width > viewport.X - 5 then x = viewport.X - width - 5 end
+    if y + height > viewport.Y - 5 then y = p.Y - height - 5 end
+    if y < 5 then y = 5 end
+
+    popup.Position = UDim2.fromOffset(x, y)
+end
+
 function NovaUI.new(title)
     local self = setmetatable({}, NovaUI)
     self.Pages = {}
@@ -118,8 +135,6 @@ function NovaUI.new(title)
         Font = Enum.Font.GothamMedium,
         AutoButtonColor = false
     })
-    close.MouseEnter:Connect(function() close.TextColor3 = Color3.fromRGB(255, 80, 80) end)
-    close.MouseLeave:Connect(function() close.TextColor3 = C.SubText end)
     close.MouseButton1Click:Connect(function()
         self.Gui.Enabled = false
         self.ActiveColorPicker = nil
@@ -154,13 +169,16 @@ function NovaUI.new(title)
     local dragging = false
     local dragStart
     local startPos
+
     self.Top.InputBegan:Connect(function(input)
         if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
         dragging = true
         dragStart = input.Position
         startPos = self.Main.Position
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
         end)
     end)
 
@@ -172,15 +190,34 @@ function NovaUI.new(title)
 
     UIS.InputBegan:Connect(function(input)
         if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-        local popup = self.ActiveColorPicker
-        if not popup or not popup.Visible then return end
         local p = input.Position
-        if insidePoint(popup, p) then return end
+        local popup = self.ActiveColorPicker
         local button = self.ActiveColorButton
-        if button and button.Parent and insidePoint(button, p) then return end
-        popup.Visible = false
-        self.ActiveColorPicker = nil
-        self.ActiveColorButton = nil
+
+        if button and button.Parent and insidePoint(button, p) then
+            if popup and popup.Visible then
+                popup.Visible = false
+                self.ActiveColorPicker = nil
+                self.ActiveColorButton = nil
+                return
+            end
+
+            if popup then
+                if self.ActiveColorPicker and self.ActiveColorPicker ~= popup then
+                    self.ActiveColorPicker.Visible = false
+                end
+                placePopup(popup, button)
+                popup.Visible = true
+            end
+            return
+        end
+
+        if popup and popup.Visible then
+            if insidePoint(popup, p) then return end
+            popup.Visible = false
+            self.ActiveColorPicker = nil
+            self.ActiveColorButton = nil
+        end
     end)
 
     return self
@@ -214,6 +251,7 @@ function NovaUI:AddPage(name, icon)
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         Visible = false
     })
+
     local padding = Instance.new("UIPadding")
     padding.PaddingTop = UDim.new(0, 6)
     padding.PaddingBottom = UDim.new(0, 5)
@@ -277,6 +315,7 @@ function NovaUI:AddPage(name, icon)
         local currentKey = nil
         local recording = false
         local currentColor = options.color or options.Color or C.Accent
+
         local holder = New("Frame", {
             Parent = page.Frame,
             Size = UDim2.new(1, 0, 0, 25),
@@ -303,7 +342,8 @@ function NovaUI:AddPage(name, icon)
             BackgroundColor3 = C.Element,
             BorderSizePixel = 0,
             Text = "",
-            AutoButtonColor = false
+            AutoButtonColor = false,
+            ZIndex = 8
         })
         Corner(toggleButton, 4)
 
@@ -312,7 +352,8 @@ function NovaUI:AddPage(name, icon)
             BackgroundColor3 = currentColor,
             Position = UDim2.new(0.5, 0, 0.5, 0),
             Size = enabled and UDim2.fromOffset(14, 14) or UDim2.fromOffset(0, 0),
-            AnchorPoint = Vector2.new(0.5, 0.5)
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            ZIndex = 9
         })
         Corner(redSquare, 2)
 
@@ -380,6 +421,7 @@ function NovaUI:AddPage(name, icon)
             Stroke(preview)
 
             local hue, sat, val = currentColor:ToHSV()
+
             local svSquare = New("Frame", {
                 Parent = popup,
                 Size = UDim2.fromOffset(170, 125),
@@ -516,23 +558,27 @@ function NovaUI:AddPage(name, icon)
 
             local svDragging = false
             local hueDragging = false
+
             svSquare.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     svDragging = true
                     setSV(input)
                 end
             end)
+
             hueBar.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     hueDragging = true
                     setHue(input)
                 end
             end)
+
             UIS.InputChanged:Connect(function(input)
                 if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
                 if svDragging then setSV(input) end
                 if hueDragging then setHue(input) end
             end)
+
             UIS.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
                     svDragging = false
@@ -540,38 +586,8 @@ function NovaUI:AddPage(name, icon)
                 end
             end)
 
-            colorButton.MouseButton1Click:Connect(function()
-                if popup.Visible then
-                    popup.Visible = false
-                    self.ActiveColorPicker = nil
-                    self.ActiveColorButton = nil
-                    return
-                end
-
-                if self.ActiveColorPicker and self.ActiveColorPicker ~= popup then
-                    self.ActiveColorPicker.Visible = false
-                end
-
-                local p = colorButton.AbsolutePosition
-                local s = colorButton.AbsoluteSize
-                local camera = workspace.CurrentCamera
-                local viewport = camera and camera.ViewportSize or Vector2.new(800, 600)
-                local width, height = 210, 225
-                local x = p.X + s.X - width
-                local y = p.Y + s.Y + 5
-
-                if x < 5 then x = 5 end
-                if x + width > viewport.X - 5 then x = viewport.X - width - 5 end
-                if y + height > viewport.Y - 5 then y = p.Y - height - 5 end
-                if y < 5 then y = 5 end
-
-                popup.Position = UDim2.fromOffset(x, y)
-                self.ActiveColorPicker = popup
-                self.ActiveColorButton = colorButton
-                popup.Visible = true
-                applyColor()
-            end)
-
+            self.ActiveColorPicker = popup
+            self.ActiveColorButton = colorButton
             applyColor()
         end
 
@@ -621,6 +637,7 @@ function NovaUI:AddPage(name, icon)
                     end
                     return
                 end
+
                 if not gameProcessed and currentKey and input.KeyCode == currentKey then
                     enabled = not enabled
                     refreshToggle()
@@ -681,6 +698,7 @@ function NovaUI:AddPage(name, icon)
             Size = UDim2.new(1, 0, 0, 25),
             BackgroundTransparency = 1
         })
+
         New("TextLabel", {
             Parent = holder,
             Size = UDim2.new(0.35, 0, 1, 0),
@@ -692,6 +710,7 @@ function NovaUI:AddPage(name, icon)
             TextXAlignment = Enum.TextXAlignment.Left,
             TextYAlignment = Enum.TextYAlignment.Center
         })
+
         local valueBox = New("TextBox", {
             Parent = holder,
             Position = UDim2.new(0.35, 4, 0.5, -9),
@@ -702,10 +721,12 @@ function NovaUI:AddPage(name, icon)
             TextSize = 8,
             Font = Enum.Font.Gotham,
             TextXAlignment = Enum.TextXAlignment.Center,
+            TextYAlignment = Enum.TextYAlignment.Center,
             ClearTextOnFocus = false
         })
         Corner(valueBox, 4)
         Stroke(valueBox)
+
         local bg = New("Frame", {
             Parent = holder,
             Position = UDim2.new(0.35, 40, 0.5, -3),
@@ -713,13 +734,16 @@ function NovaUI:AddPage(name, icon)
             BackgroundColor3 = Color3.fromRGB(38, 38, 43)
         })
         Corner(bg, 6)
+
         local fill = New("Frame", {
             Parent = bg,
             Size = UDim2.new((value - min) / (max - min), 0, 1, 0),
             BackgroundColor3 = C.Accent
         })
         Corner(fill, 6)
+
         local draggingSlider = false
+
         local function setValue(v, fire)
             v = tonumber(v)
             if not v then
@@ -727,17 +751,21 @@ function NovaUI:AddPage(name, icon)
                 return
             end
             value = math.clamp(v, min, max)
-            if min % 1 == 0 and max % 1 == 0 then value = math.floor(value + 0.5) end
+            if min % 1 == 0 and max % 1 == 0 then
+                value = math.floor(value + 0.5)
+            end
             valueBox.Text = tostring(value)
             fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
             if fire and callback then callback(value) end
         end
+
         local function slide(input)
-            local s = bg.AbsoluteSize.X
-            if s <= 0 then return end
-            local pos = math.clamp((input.Position.X - bg.AbsolutePosition.X) / s, 0, 1)
+            local size = bg.AbsoluteSize.X
+            if size <= 0 then return end
+            local pos = math.clamp((input.Position.X - bg.AbsolutePosition.X) / size, 0, 1)
             setValue(min + pos * (max - min), true)
         end
+
         valueBox.FocusLost:Connect(function() setValue(valueBox.Text, true) end)
         bg.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -751,6 +779,7 @@ function NovaUI:AddPage(name, icon)
         UIS.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingSlider = false end
         end)
+
         return {
             Set = function(_, v) setValue(v, false) end,
             Get = function() return value end
@@ -762,17 +791,13 @@ end
 
 function NovaUI:Toggle()
     self.Gui.Enabled = not self.Gui.Enabled
-    if not self.Gui.Enabled then
-        self.ActiveColorPicker = nil
-        self.ActiveColorButton = nil
-    end
 end
 
 print("hello world")
 local ExampleWindow = NovaUI.new("NovaUI Example")
 local ExamplePage = ExampleWindow:AddPage("Main", "M")
 ExamplePage:AddTitle("NovaUI Test")
-ExamplePage:AddLabel("[FIX] COLORPICKER CLICK")
+ExamplePage:AddLabel("[FIX] COLORPICKER GLOBAL INPUT")
 ExamplePage:AddToggle("Test Toggle", false, function(state) print("Toggle:", state) end, {colorpicker = true, keybind = true})
 ExamplePage:AddButton("Test Button", function() print("Button clicked") end)
 ExamplePage:AddSlider("Slider", 0, 100, 50, function(value) print("Slider:", value) end)
