@@ -10,6 +10,12 @@ local TweenService = game:GetService("TweenService")
 
 local Player = Players.LocalPlayer
 
+for _, gui in ipairs(Player:WaitForChild("PlayerGui"):GetChildren()) do
+    if gui:IsA("ScreenGui") and string.sub(gui.Name, 1, 6) == "NovaUI" then
+        gui:Destroy()
+    end
+end
+
 local C = {
     Background = Color3.fromRGB(13, 13, 15),
     Sidebar = Color3.fromRGB(16, 16, 19),
@@ -49,13 +55,8 @@ function NovaUI.new(title)
     self.Pages = {}
     self.CurrentPage = nil
 
-    local oldGui = Player:WaitForChild("PlayerGui"):FindFirstChild("NovaUI")
-    if oldGui then
-        oldGui:Destroy()
-    end
-
     self.Gui = New("ScreenGui", {
-        Name = "NovaUI",
+        Name = "NovaUI_290H",
         ResetOnSpawn = false,
         DisplayOrder = 9999,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
@@ -609,7 +610,7 @@ local ExampleWindow = NovaUI.new("NovaUI Example")
 local ExamplePage = ExampleWindow:AddPage("Main", "M")
 
 ExamplePage:AddTitle("NovaUI Test")
-ExamplePage:AddLabel("Compact UI test")
+ExamplePage:AddLabel("220 x 290")
 
 ExamplePage:AddToggle("Test Toggle", false, function(state)
     print("Toggle:", state)
