@@ -1,0 +1,62 @@
+name: Update UI test
+
+on:
+  push:
+    paths:
+      - '.github/ui-test-trigger.txt'
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add test example
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('ui')
+          s = p.read_text()
+
+          if 'local ExampleWindow = NovaUI.new("NovaUI Example")' not in s:
+              marker = '\nprint("hello world")\nreturn NovaUI'
+              example = '''
+
+--// TEST EXAMPLE
+local ExampleWindow = NovaUI.new("NovaUI Example")
+local ExamplePage = ExampleWindow:AddPage("Main", "M")
+
+ExamplePage:AddTitle("NovaUI Test")
+ExamplePage:AddLabel("If you see this UI, the library loaded successfully.")
+
+ExamplePage:AddToggle("Test Toggle", false, function(state)
+    print("Toggle:", state)
+end)
+
+ExamplePage:AddButton("Test Button", function()
+    print("Button clicked")
+end)
+
+ExamplePage:AddSlider("Test Slider", 0, 100, 50, function(value)
+    print("Slider:", value)
+end)
+'''
+              if marker not in s:
+                  raise SystemExit('Target marker not found')
+              s = s.replace(marker, '\nprint("hello world")' + example + '\nreturn NovaUI', 1)
+              p.write_text(s)
+          PY
+
+      - name: Commit UI changes and remove temporary files
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ui
+          git rm -f .github/ui-test-trigger.txt .github/workflows/update-ui-test.yml
+          git commit -m 'test: add NovaUI example'
+          git push
