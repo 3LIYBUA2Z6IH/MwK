@@ -49,9 +49,15 @@ function NovaUI.new(title)
     self.Pages = {}
     self.CurrentPage = nil
 
+    local oldGui = Player:WaitForChild("PlayerGui"):FindFirstChild("NovaUI")
+    if oldGui then
+        oldGui:Destroy()
+    end
+
     self.Gui = New("ScreenGui", {
         Name = "NovaUI",
         ResetOnSpawn = false,
+        DisplayOrder = 9999,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
         Parent = Player:WaitForChild("PlayerGui")
     })
