@@ -1,783 +1,1041 @@
---// NovaUI
---// Simple Roblox UI Library
---// Page-based interface with sidebar navigation
+--// NovaUI Compact
+--// Roblox UI Library
 
 local NovaUI = {}
 NovaUI.__index = NovaUI
 
 local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 
-local LocalPlayer = Players.LocalPlayer
+local Player = Players.LocalPlayer
 
---------------------------------------------------
--- SERVICES
---------------------------------------------------
-
-local function create(className, properties)
-	local object = Instance.new(className)
-
-	for property, value in pairs(properties or {}) do
-		object[property] = value
-	end
-
-	return object
-end
-
-local function corner(parent, radius)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, radius or 6)
-	c.Parent = parent
-	return c
-end
-
-local function stroke(parent, color, transparency)
-	local s = Instance.new("UIStroke")
-	s.Color = color
-	s.Transparency = transparency or 0
-	s.Thickness = 1
-	s.Parent = parent
-	return s
-end
-
-local function padding(parent, left, right, top, bottom)
-	local p = Instance.new("UIPadding")
-	p.PaddingLeft = UDim.new(0, left or 0)
-	p.PaddingRight = UDim.new(0, right or 0)
-	p.PaddingTop = UDim.new(0, top or 0)
-	p.PaddingBottom = UDim.new(0, bottom or 0)
-	p.Parent = parent
-	return p
-end
-
---------------------------------------------------
+----------------------------------------------------
 -- COLORS
---------------------------------------------------
+----------------------------------------------------
 
-local Colors = {
-	Background = Color3.fromRGB(13, 14, 17),
-	Sidebar = Color3.fromRGB(17, 18, 22),
-	Panel = Color3.fromRGB(20, 21, 26),
+local C = {
+    Background = Color3.fromRGB(13, 13, 15),
+    Sidebar = Color3.fromRGB(16, 16, 19),
+    Top = Color3.fromRGB(19, 19, 22),
 
-	Text = Color3.fromRGB(235, 235, 240),
-	SubText = Color3.fromRGB(135, 137, 145),
+    Element = Color3.fromRGB(21, 21, 25),
+    ElementHover = Color3.fromRGB(27, 27, 32),
 
-	Border = Color3.fromRGB(38, 40, 47),
+    Border = Color3.fromRGB(34, 34, 39),
 
-	Element = Color3.fromRGB(25, 27, 32),
-	ElementHover = Color3.fromRGB(31, 33, 40),
+    Text = Color3.fromRGB(225, 225, 230),
+    SubText = Color3.fromRGB(135, 135, 142),
 
-	Accent = Color3.fromRGB(123, 92, 255),
-	AccentDark = Color3.fromRGB(91, 65, 210),
+    Accent = Color3.fromRGB(235, 92, 96),
+    Accent2 = Color3.fromRGB(180, 55, 60),
 }
 
---------------------------------------------------
+----------------------------------------------------
+-- UTILITY
+----------------------------------------------------
+
+local function New(class, props)
+    local obj = Instance.new(class)
+
+    for i, v in pairs(props or {}) do
+        obj[i] = v
+    end
+
+    return obj
+end
+
+local function Corner(obj, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius)
+    c.Parent = obj
+end
+
+local function Stroke(obj)
+    local s = Instance.new("UIStroke")
+    s.Color = C.Border
+    s.Thickness = 1
+    s.Transparency = 0
+    s.Parent = obj
+end
+
+----------------------------------------------------
 -- WINDOW
---------------------------------------------------
+----------------------------------------------------
 
 function NovaUI.new(title)
-	local self = setmetatable({}, NovaUI)
 
-	self.Pages = {}
-	self.CurrentPage = nil
+    local self = setmetatable({}, NovaUI)
 
-	------------------------------------------------
-	-- SCREEN GUI
-	------------------------------------------------
+    self.Pages = {}
+    self.CurrentPage = nil
 
-	self.ScreenGui = create("ScreenGui", {
-		Name = "NovaUI",
-		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	})
+    self.Gui = New("ScreenGui", {
+        Name = "NovaUI",
+        ResetOnSpawn = false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+        Parent = Player:WaitForChild("PlayerGui")
+    })
 
-	self.ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    ------------------------------------------------
+    -- MAIN
+    ------------------------------------------------
 
-	------------------------------------------------
-	-- MAIN WINDOW
-	------------------------------------------------
+    self.Main = New("Frame", {
+        Parent = self.Gui,
 
-	self.Main = create("Frame", {
-		Name = "Main",
-		Parent = self.ScreenGui,
+        Size = UDim2.fromOffset(410, 285),
+        Position = UDim2.new(
+            0.5, -205,
+            0.5, -142
+        ),
 
-		Size = UDim2.fromOffset(650, 420),
-		Position = UDim2.new(0.5, -325, 0.5, -210),
+        BackgroundColor3 = C.Background,
+        BorderSizePixel = 0
+    })
 
-		BackgroundColor3 = Colors.Background,
-		BorderSizePixel = 0,
-	})
+    Corner(self.Main, 5)
+    Stroke(self.Main)
 
-	corner(self.Main, 8)
-	stroke(self.Main, Colors.Border, 0)
+    ------------------------------------------------
+    -- TOP
+    ------------------------------------------------
 
-	------------------------------------------------
-	-- TOP BAR
-	------------------------------------------------
+    self.Top = New("Frame", {
+        Parent = self.Main,
 
-	self.TopBar = create("Frame", {
-		Name = "TopBar",
-		Parent = self.Main,
+        Size = UDim2.new(1, 0, 0, 32),
 
-		Size = UDim2.new(1, 0, 0, 48),
+        BackgroundColor3 = C.Top,
+        BorderSizePixel = 0
+    })
 
-		BackgroundColor3 = Colors.Panel,
-		BorderSizePixel = 0,
-	})
+    local titleLabel = New("TextLabel", {
+        Parent = self.Top,
 
-	corner(self.TopBar, 8)
+        Size = UDim2.new(1, -45, 1, 0),
+        Position = UDim2.fromOffset(11, 0),
 
-	-- Cover bottom rounded corners
-	create("Frame", {
-		Parent = self.TopBar,
-		Size = UDim2.new(1, 0, 0, 15),
-		Position = UDim2.new(0, 0, 1, -15),
-		BackgroundColor3 = Colors.Panel,
-		BorderSizePixel = 0,
-	})
+        BackgroundTransparency = 1,
 
-	self.Title = create("TextLabel", {
-		Parent = self.TopBar,
+        Text = title or "Nova",
+        TextColor3 = C.Text,
+        TextSize = 11,
+        Font = Enum.Font.GothamBold,
 
-		Size = UDim2.new(1, -100, 1, 0),
-		Position = UDim2.fromOffset(16, 0),
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
 
-		BackgroundTransparency = 1,
+    ------------------------------------------------
+    -- CLOSE
+    ------------------------------------------------
 
-		Text = title or "Nova UI",
-		TextColor3 = Colors.Text,
-		TextSize = 15,
-		Font = Enum.Font.GothamBold,
+    local close = New("TextButton", {
+        Parent = self.Top,
 
-		TextXAlignment = Enum.TextXAlignment.Left,
-	})
+        Size = UDim2.fromOffset(27, 25),
+        Position = UDim2.new(1, -31, 0, 3),
 
-	------------------------------------------------
-	-- CLOSE
-	------------------------------------------------
+        BackgroundTransparency = 1,
 
-	local close = create("TextButton", {
-		Parent = self.TopBar,
+        Text = "×",
+        TextColor3 = C.SubText,
+        TextSize = 17,
+        Font = Enum.Font.GothamMedium,
 
-		Size = UDim2.fromOffset(34, 34),
-		Position = UDim2.new(1, -42, 0, 7),
+        AutoButtonColor = false
+    })
 
-		BackgroundTransparency = 1,
+    close.MouseEnter:Connect(function()
+        close.TextColor3 = Color3.fromRGB(255, 80, 80)
+    end)
 
-		Text = "×",
-		TextColor3 = Colors.SubText,
-		TextSize = 22,
-		Font = Enum.Font.GothamMedium,
+    close.MouseLeave:Connect(function()
+        close.TextColor3 = C.SubText
+    end)
 
-		AutoButtonColor = false,
-	})
+    close.MouseButton1Click:Connect(function()
+        self.Gui.Enabled = false
+    end)
 
-	close.MouseEnter:Connect(function()
-		close.TextColor3 = Color3.fromRGB(255, 90, 90)
-	end)
+    ------------------------------------------------
+    -- SIDEBAR
+    ------------------------------------------------
 
-	close.MouseLeave:Connect(function()
-		close.TextColor3 = Colors.SubText
-	end)
+    self.Sidebar = New("Frame", {
+        Parent = self.Main,
 
-	close.MouseButton1Click:Connect(function()
-		self.ScreenGui.Enabled = false
-	end)
+        Size = UDim2.new(0, 39, 1, -32),
+        Position = UDim2.fromOffset(0, 32),
 
-	------------------------------------------------
-	-- SIDEBAR
-	------------------------------------------------
+        BackgroundColor3 = C.Sidebar,
+        BorderSizePixel = 0
+    })
 
-	self.Sidebar = create("Frame", {
-		Name = "Sidebar",
-		Parent = self.Main,
+    local sideLayout = New("UIListLayout", {
+        Parent = self.Sidebar,
 
-		Size = UDim2.new(0, 68, 1, -48),
-		Position = UDim2.fromOffset(0, 48),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
 
-		BackgroundColor3 = Colors.Sidebar,
-		BorderSizePixel = 0,
-	})
+        Padding = UDim.new(0, 5)
+    })
 
-	padding(self.Sidebar, 9, 9, 12, 10)
+    local sidePadding = Instance.new("UIPadding")
+    sidePadding.PaddingTop = UDim.new(0, 8)
+    sidePadding.Parent = self.Sidebar
 
-	self.SidebarLayout = create("UIListLayout", {
-		Parent = self.Sidebar,
+    ------------------------------------------------
+    -- CONTENT
+    ------------------------------------------------
 
-		FillDirection = Enum.FillDirection.Vertical,
-		HorizontalAlignment = Enum.HorizontalAlignment.Center,
-		SortOrder = Enum.SortOrder.LayoutOrder,
+    self.Content = New("Frame", {
+        Parent = self.Main,
 
-		Padding = UDim.new(0, 8),
-	})
+        Size = UDim2.new(1, -39, 1, -32),
+        Position = UDim2.fromOffset(39, 32),
 
-	------------------------------------------------
-	-- CONTENT
-	------------------------------------------------
+        BackgroundColor3 = C.Background,
+        BorderSizePixel = 0
+    })
 
-	self.Content = create("Frame", {
-		Name = "Content",
-		Parent = self.Main,
+    ------------------------------------------------
+    -- DRAG
+    ------------------------------------------------
 
-		Size = UDim2.new(1, -68, 1, -48),
-		Position = UDim2.fromOffset(68, 48),
+    local dragging = false
+    local dragStart
+    local startPos
 
-		BackgroundColor3 = Colors.Background,
-		BorderSizePixel = 0,
-	})
+    self.Top.InputBegan:Connect(function(input)
 
-	padding(self.Content, 14, 14, 14, 14)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
 
-	------------------------------------------------
-	-- DRAGGING
-	------------------------------------------------
+            dragging = true
+            dragStart = input.Position
+            startPos = self.Main.Position
 
-	local dragging = false
-	local dragStart
-	local startPosition
+            input.Changed:Connect(function()
 
-	self.TopBar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = true
-			dragStart = input.Position
-			startPosition = self.Main.Position
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
 
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
-				end
-			end)
-		end
-	end)
+            end)
 
-	UserInputService.InputChanged:Connect(function(input)
-		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-			local delta = input.Position - dragStart
+        end
 
-			self.Main.Position = UDim2.new(
-				startPosition.X.Scale,
-				startPosition.X.Offset + delta.X,
+    end)
 
-				startPosition.Y.Scale,
-				startPosition.Y.Offset + delta.Y
-			)
-		end
-	end)
+    UIS.InputChanged:Connect(function(input)
 
-	return self
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+
+            local delta = input.Position - dragStart
+
+            self.Main.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+
+        end
+
+    end)
+
+    return self
 end
 
---------------------------------------------------
--- PAGE
---------------------------------------------------
-
-function NovaUI:AddPage(name, icon)
-	local page = {}
-
-	page.Name = name
-	page.Icon = icon or string.sub(name, 1, 1):upper()
-	page.Controls = {}
-
-	------------------------------------------------
-	-- PAGE FRAME
-	------------------------------------------------
-
-	page.Frame = create("ScrollingFrame", {
-		Name = name,
-		Parent = self.Content,
-
-		Size = UDim2.fromScale(1, 1),
-
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-
-		CanvasSize = UDim2.new(0, 0, 0, 0),
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-
-		ScrollBarThickness = 2,
-		ScrollBarImageColor3 = Colors.Border,
-
-		Visible = false,
-	})
-
-	padding(page.Frame, 2, 4, 2, 8)
-
-	page.Layout = create("UIListLayout", {
-		Parent = page.Frame,
-
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 8),
-	})
-
-	------------------------------------------------
-	-- PAGE BUTTON
-	------------------------------------------------
-
-	local button = create("TextButton", {
-		Parent = self.Sidebar,
-
-		Size = UDim2.fromOffset(48, 42),
-
-		BackgroundColor3 = Colors.Element,
-		BorderSizePixel = 0,
-
-		Text = page.Icon,
-		TextColor3 = Colors.SubText,
-		TextSize = 15,
-		Font = Enum.Font.GothamBold,
-
-		AutoButtonColor = false,
-	})
-
-	corner(button, 6)
-
-	page.Button = button
-
-	------------------------------------------------
-	-- BUTTON HOVER
-	------------------------------------------------
-
-	button.MouseEnter:Connect(function()
-		if self.CurrentPage ~= page then
-			TweenService:Create(
-				button,
-				TweenInfo.new(0.15),
-				{
-					BackgroundColor3 = Colors.ElementHover
-				}
-			):Play()
-		end
-	end)
-
-	button.MouseLeave:Connect(function()
-		if self.CurrentPage ~= page then
-			TweenService:Create(
-				button,
-				TweenInfo.new(0.15),
-				{
-					BackgroundColor3 = Colors.Element
-				}
-			):Play()
-		end
-	end)
-
-	------------------------------------------------
-	-- PAGE SWITCH
-	------------------------------------------------
-
-	button.MouseButton1Click:Connect(function()
-		self:SelectPage(page)
-	end)
-
-	table.insert(self.Pages, page)
-
-	if not self.CurrentPage then
-		self:SelectPage(page)
-	end
-
-	------------------------------------------------
-	-- PAGE METHODS
-	------------------------------------------------
-
-	function page:AddTitle(text)
-		local title = create("TextLabel", {
-			Parent = page.Frame,
-
-			Size = UDim2.new(1, 0, 0, 25),
-
-			BackgroundTransparency = 1,
-
-			Text = text,
-			TextColor3 = Colors.Text,
-			TextSize = 17,
-			Font = Enum.Font.GothamBold,
-
-			TextXAlignment = Enum.TextXAlignment.Left,
-		})
-
-		return title
-	end
-
-	function page:AddLabel(text)
-		local label = create("TextLabel", {
-			Parent = page.Frame,
-
-			Size = UDim2.new(1, 0, 0, 32),
-
-			BackgroundTransparency = 1,
-
-			Text = text,
-			TextColor3 = Colors.SubText,
-			TextSize = 12,
-			Font = Enum.Font.GothamMedium,
-
-			TextWrapped = true,
-			TextXAlignment = Enum.TextXAlignment.Left,
-		})
-
-		return label
-	end
-
-	------------------------------------------------
-	-- TOGGLE
-	------------------------------------------------
-
-	function page:AddToggle(text, default, callback)
-
-		local state = default or false
-
-		local holder = create("TextButton", {
-			Parent = page.Frame,
-
-			Size = UDim2.new(1, 0, 0, 44),
-
-			BackgroundColor3 = Colors.Element,
-			BorderSizePixel = 0,
-
-			Text = "",
-			AutoButtonColor = false,
-		})
-
-		corner(holder, 6)
-
-		local label = create("TextLabel", {
-			Parent = holder,
-
-			Size = UDim2.new(1, -65, 1, 0),
-			Position = UDim2.fromOffset(13, 0),
-
-			BackgroundTransparency = 1,
-
-			Text = text,
-			TextColor3 = Colors.Text,
-			TextSize = 12,
-			Font = Enum.Font.GothamMedium,
-
-			TextXAlignment = Enum.TextXAlignment.Left,
-		})
-
-		local box = create("Frame", {
-			Parent = holder,
-
-			Size = UDim2.fromOffset(30, 18),
-			Position = UDim2.new(1, -43, 0.5, -9),
-
-			BackgroundColor3 = Color3.fromRGB(35, 37, 43),
-			BorderSizePixel = 0,
-		})
-
-		corner(box, 9)
-
-		local circle = create("Frame", {
-			Parent = box,
-
-			Size = UDim2.fromOffset(14, 14),
-			Position = UDim2.fromOffset(2, 2),
-
-			BackgroundColor3 = Colors.SubText,
-			BorderSizePixel = 0,
-		})
-
-		corner(circle, 20)
-
-		local function update()
-			if state then
-				TweenService:Create(
-					box,
-					TweenInfo.new(0.15),
-					{
-						BackgroundColor3 = Colors.Accent
-					}
-				):Play()
-
-				TweenService:Create(
-					circle,
-					TweenInfo.new(0.15),
-					{
-						Position = UDim2.fromOffset(14, 2),
-						BackgroundColor3 = Color3.fromRGB(255,255,255)
-					}
-				):Play()
-			else
-				TweenService:Create(
-					box,
-					TweenInfo.new(0.15),
-					{
-						BackgroundColor3 = Color3.fromRGB(35,37,43)
-					}
-				):Play()
-
-				TweenService:Create(
-					circle,
-					TweenInfo.new(0.15),
-					{
-						Position = UDim2.fromOffset(2, 2),
-						BackgroundColor3 = Colors.SubText
-					}
-				):Play()
-			end
-
-			if callback then
-				callback(state)
-			end
-		end
-
-		holder.MouseButton1Click:Connect(function()
-			state = not state
-			update()
-		end)
-
-		update()
-
-		return {
-			Set = function(_, value)
-				state = value
-				update()
-			end,
-
-			Get = function()
-				return state
-			end,
-		}
-	end
-
-	------------------------------------------------
-	-- BUTTON
-	------------------------------------------------
-
-	function page:AddButton(text, callback)
-
-		local button = create("TextButton", {
-			Parent = page.Frame,
-
-			Size = UDim2.new(1, 0, 0, 42),
-
-			BackgroundColor3 = Colors.Element,
-			BorderSizePixel = 0,
-
-			Text = text,
-			TextColor3 = Colors.Text,
-			TextSize = 12,
-			Font = Enum.Font.GothamMedium,
-
-			AutoButtonColor = false,
-		})
-
-		corner(button, 6)
-
-		button.MouseEnter:Connect(function()
-			TweenService:Create(
-				button,
-				TweenInfo.new(0.15),
-				{
-					BackgroundColor3 = Colors.ElementHover
-				}
-			):Play()
-		end)
-
-		button.MouseLeave:Connect(function()
-			TweenService:Create(
-				button,
-				TweenInfo.new(0.15),
-				{
-					BackgroundColor3 = Colors.Element
-				}
-			):Play()
-		end)
-
-		button.MouseButton1Click:Connect(function()
-			if callback then
-				callback()
-			end
-		end)
-
-		return button
-	end
-
-	------------------------------------------------
-	-- SLIDER
-	------------------------------------------------
-
-	function page:AddSlider(text, min, max, default, callback)
-
-		local value = default or min
-
-		local holder = create("Frame", {
-			Parent = page.Frame,
-
-			Size = UDim2.new(1, 0, 0, 58),
-
-			BackgroundColor3 = Colors.Element,
-			BorderSizePixel = 0,
-		})
-
-		corner(holder, 6)
-
-		local label = create("TextLabel", {
-			Parent = holder,
-
-			Size = UDim2.new(1, -90, 0, 25),
-			Position = UDim2.fromOffset(12, 5),
-
-			BackgroundTransparency = 1,
-
-			Text = text,
-			TextColor3 = Colors.Text,
-			TextSize = 12,
-			Font = Enum.Font.GothamMedium,
-
-			TextXAlignment = Enum.TextXAlignment.Left,
-		})
-
-		local valueLabel = create("TextLabel", {
-			Parent = holder,
-
-			Size = UDim2.fromOffset(65, 25),
-			Position = UDim2.new(1, -75, 0, 5),
-
-			BackgroundTransparency = 1,
-
-			Text = tostring(value),
-			TextColor3 = Colors.SubText,
-			TextSize = 11,
-			Font = Enum.Font.GothamMedium,
-
-			TextXAlignment = Enum.TextXAlignment.Right,
-		})
-
-		local bar = create("Frame", {
-			Parent = holder,
-
-			Size = UDim2.new(1, -24, 0, 5),
-			Position = UDim2.fromOffset(12, 40),
-
-			BackgroundColor3 = Color3.fromRGB(35, 37, 43),
-			BorderSizePixel = 0,
-		})
-
-		corner(bar, 5)
-
-		local fill = create("Frame", {
-			Parent = bar,
-
-			Size = UDim2.new(
-				(value - min) / (max - min),
-				0,
-				1,
-				0
-			),
-
-			BackgroundColor3 = Colors.Accent,
-			BorderSizePixel = 0,
-		})
-
-		corner(fill, 5)
-
-		local draggingSlider = false
-
-		local function setValue(input)
-			local percent = math.clamp(
-				(input.Position.X - bar.AbsolutePosition.X)
-					/ bar.AbsoluteSize.X,
-				0,
-				1
-			)
-
-			value = math.floor(
-				min + ((max - min) * percent)
-			)
-
-			valueLabel.Text = tostring(value)
-
-			fill.Size = UDim2.new(percent, 0, 1, 0)
-
-			if callback then
-				callback(value)
-			end
-		end
-
-		bar.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				draggingSlider = true
-				setValue(input)
-			end
-		end)
-
-		UserInputService.InputChanged:Connect(function(input)
-			if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
-				setValue(input)
-			end
-		end)
-
-		UserInputService.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				draggingSlider = false
-			end
-		end)
-
-		return {
-			Set = function(_, newValue)
-				value = math.clamp(newValue, min, max)
-
-				local percent = (value - min) / (max - min)
-
-				fill.Size = UDim2.new(percent, 0, 1, 0)
-				valueLabel.Text = tostring(value)
-			end,
-
-			Get = function()
-				return value
-			end,
-		}
-	end
-
-	return page
-end
-
---------------------------------------------------
+----------------------------------------------------
 -- SELECT PAGE
---------------------------------------------------
+----------------------------------------------------
 
 function NovaUI:SelectPage(page)
 
-	if self.CurrentPage == page then
-		return
-	end
+    for _, p in ipairs(self.Pages) do
 
-	for _, otherPage in ipairs(self.Pages) do
-		otherPage.Frame.Visible = false
+        p.Frame.Visible = false
 
-		TweenService:Create(
-			otherPage.Button,
-			TweenInfo.new(0.15),
-			{
-				BackgroundColor3 = Colors.Element,
-				TextColor3 = Colors.SubText
-			}
-		):Play()
-	end
+        TweenService:Create(
+            p.Button,
+            TweenInfo.new(0.12),
+            {
+                BackgroundColor3 = C.Sidebar,
+                TextColor3 = C.SubText
+            }
+        ):Play()
 
-	page.Frame.Visible = true
+    end
 
-	TweenService:Create(
-		page.Button,
-		TweenInfo.new(0.15),
-		{
-			BackgroundColor3 = Colors.AccentDark,
-			TextColor3 = Color3.fromRGB(255,255,255)
-		}
-	):Play()
+    page.Frame.Visible = true
 
-	self.CurrentPage = page
+    TweenService:Create(
+        page.Button,
+        TweenInfo.new(0.12),
+        {
+            BackgroundColor3 = C.Accent2,
+            TextColor3 = Color3.fromRGB(255,255,255)
+        }
+    ):Play()
+
+    self.CurrentPage = page
 end
 
---------------------------------------------------
--- TOGGLE UI
---------------------------------------------------
+----------------------------------------------------
+-- PAGE
+----------------------------------------------------
+
+function NovaUI:AddPage(name, icon)
+
+    local page = {}
+
+    page.Name = name
+    page.Icon = icon or string.sub(name, 1, 1)
+
+    ------------------------------------------------
+    -- FRAME
+    ------------------------------------------------
+
+    page.Frame = New("ScrollingFrame", {
+        Parent = self.Content,
+
+        Size = UDim2.fromScale(1, 1),
+
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+
+        ScrollBarThickness = 1,
+        ScrollBarImageColor3 = C.Border,
+
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+
+        Visible = false
+    })
+
+    local padding = Instance.new("UIPadding")
+
+    padding.PaddingTop = UDim.new(0, 10)
+    padding.PaddingBottom = UDim.new(0, 8)
+    padding.PaddingLeft = UDim.new(0, 10)
+    padding.PaddingRight = UDim.new(0, 10)
+
+    padding.Parent = page.Frame
+
+    local layout = New("UIListLayout", {
+        Parent = page.Frame,
+
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 5)
+    })
+
+    ------------------------------------------------
+    -- PAGE BUTTON
+    ------------------------------------------------
+
+    page.Button = New("TextButton", {
+
+        Parent = self.Sidebar,
+
+        Size = UDim2.fromOffset(31, 31),
+
+        BackgroundColor3 = C.Sidebar,
+        BorderSizePixel = 0,
+
+        Text = page.Icon,
+
+        TextColor3 = C.SubText,
+        TextSize = 10,
+        Font = Enum.Font.GothamBold,
+
+        AutoButtonColor = false
+    })
+
+    Corner(page.Button, 4)
+
+    page.Button.MouseButton1Click:Connect(function()
+        self:SelectPage(page)
+    end)
+
+    table.insert(self.Pages, page)
+
+    if not self.CurrentPage then
+        self:SelectPage(page)
+    end
+
+    ------------------------------------------------
+    -- TITLE
+    ------------------------------------------------
+
+    function page:AddTitle(text)
+
+        local obj = New("TextLabel", {
+
+            Parent = page.Frame,
+
+            Size = UDim2.new(1, 0, 0, 19),
+
+            BackgroundTransparency = 1,
+
+            Text = text,
+
+            TextColor3 = C.Text,
+            TextSize = 12,
+
+            Font = Enum.Font.GothamBold,
+
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        return obj
+    end
+
+    ------------------------------------------------
+    -- LABEL
+    ------------------------------------------------
+
+    function page:AddLabel(text)
+
+        local obj = New("TextLabel", {
+
+            Parent = page.Frame,
+
+            Size = UDim2.new(1, 0, 0, 20),
+
+            BackgroundTransparency = 1,
+
+            Text = text,
+
+            TextColor3 = C.SubText,
+            TextSize = 9,
+
+            Font = Enum.Font.GothamMedium,
+
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        return obj
+    end
+
+    ------------------------------------------------
+    -- TOGGLE + KEYBIND
+    ------------------------------------------------
+
+    function page:AddToggle(text, default, callback, options)
+
+        options = options or {}
+
+        local enabled = default or false
+
+        local bindEnabled = options.keybind == true
+        local currentKey = nil
+        local recording = false
+
+        local holder = New("Frame", {
+
+            Parent = page.Frame,
+
+            Size = UDim2.new(1, 0, 0, 31),
+
+            BackgroundColor3 = C.Element,
+            BorderSizePixel = 0
+        })
+
+        Corner(holder, 4)
+
+        ------------------------------------------------
+        -- TEXT
+        ------------------------------------------------
+
+        local label = New("TextLabel", {
+
+            Parent = holder,
+
+            Size = UDim2.new(
+                1,
+                bindEnabled and -78 or -45,
+                1,
+                0
+            ),
+
+            Position = UDim2.fromOffset(9, 0),
+
+            BackgroundTransparency = 1,
+
+            Text = text,
+
+            TextColor3 = C.Text,
+            TextSize = 9,
+
+            Font = Enum.Font.GothamMedium,
+
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        ------------------------------------------------
+        -- TOGGLE
+        ------------------------------------------------
+
+        local toggle = New("TextButton", {
+
+            Parent = holder,
+
+            Size = UDim2.fromOffset(25, 14),
+
+            Position = UDim2.new(
+                1,
+                bindEnabled and -34 or -32,
+                0.5,
+                -7
+            ),
+
+            BackgroundColor3 = Color3.fromRGB(35,35,40),
+
+            BorderSizePixel = 0,
+
+            Text = "",
+
+            AutoButtonColor = false
+        })
+
+        Corner(toggle, 8)
+
+        local knob = New("Frame", {
+
+            Parent = toggle,
+
+            Size = UDim2.fromOffset(10, 10),
+
+            Position = UDim2.fromOffset(2, 2),
+
+            BackgroundColor3 = C.SubText,
+
+            BorderSizePixel = 0
+        })
+
+        Corner(knob, 10)
+
+        ------------------------------------------------
+        -- UPDATE TOGGLE
+        ------------------------------------------------
+
+        local function updateToggle()
+
+            if enabled then
+
+                TweenService:Create(
+                    toggle,
+                    TweenInfo.new(0.12),
+                    {
+                        BackgroundColor3 = C.Accent
+                    }
+                ):Play()
+
+                TweenService:Create(
+                    knob,
+                    TweenInfo.new(0.12),
+                    {
+                        Position = UDim2.fromOffset(13, 2),
+                        BackgroundColor3 =
+                            Color3.fromRGB(255,255,255)
+                    }
+                ):Play()
+
+            else
+
+                TweenService:Create(
+                    toggle,
+                    TweenInfo.new(0.12),
+                    {
+                        BackgroundColor3 =
+                            Color3.fromRGB(35,35,40)
+                    }
+                ):Play()
+
+                TweenService:Create(
+                    knob,
+                    TweenInfo.new(0.12),
+                    {
+                        Position = UDim2.fromOffset(2, 2),
+                        BackgroundColor3 = C.SubText
+                    }
+                ):Play()
+
+            end
+
+            if callback then
+                callback(enabled)
+            end
+
+        end
+
+        toggle.MouseButton1Click:Connect(function()
+
+            enabled = not enabled
+
+            updateToggle()
+
+        end)
+
+        ------------------------------------------------
+        -- KEYBIND
+        ------------------------------------------------
+
+        local bindButton
+
+        if bindEnabled then
+
+            bindButton = New("TextButton", {
+
+                Parent = holder,
+
+                Size = UDim2.fromOffset(32, 18),
+
+                Position = UDim2.new(
+                    1,
+                    -72,
+                    0.5,
+                    -9
+                ),
+
+                BackgroundColor3 = C.Background,
+
+                BorderSizePixel = 0,
+
+                Text = "None",
+
+                TextColor3 = C.SubText,
+                TextSize = 8,
+
+                Font = Enum.Font.GothamMedium,
+
+                AutoButtonColor = false
+            })
+
+            Corner(bindButton, 3)
+
+            Stroke(bindButton)
+
+            bindButton.MouseButton1Click:Connect(function()
+
+                if recording then
+                    return
+                end
+
+                recording = true
+
+                bindButton.Text = "..."
+
+                bindButton.TextColor3 = C.Text
+
+            end)
+
+            UIS.InputBegan:Connect(function(input, gameProcessed)
+
+                if gameProcessed then
+                    return
+                end
+
+                ----------------------------------------
+                -- RECORD KEY
+                ----------------------------------------
+
+                if recording then
+
+                    if input.KeyCode == Enum.KeyCode.Escape then
+
+                        currentKey = nil
+
+                        bindButton.Text = "None"
+
+                        bindButton.TextColor3 =
+                            C.SubText
+
+                        recording = false
+
+                        return
+                    end
+
+                    if input.UserInputType ==
+                        Enum.UserInputType.Keyboard then
+
+                        currentKey = input.KeyCode
+
+                        bindButton.Text =
+                            currentKey.Name
+
+                        bindButton.TextColor3 =
+                            C.Text
+
+                        recording = false
+
+                    end
+
+                    return
+                end
+
+                ----------------------------------------
+                -- ACTIVATE KEYBIND
+                ----------------------------------------
+
+                if currentKey
+                    and input.KeyCode == currentKey then
+
+                    enabled = not enabled
+
+                    updateToggle()
+
+                end
+
+            end)
+
+        end
+
+        ------------------------------------------------
+        -- RETURN
+        ------------------------------------------------
+
+        return {
+
+            Set = function(_, state)
+
+                enabled = state
+                updateToggle()
+
+            end,
+
+            Get = function()
+
+                return enabled
+
+            end,
+
+            GetKey = function()
+
+                return currentKey
+
+            end
+
+        }
+
+    end
+
+    ------------------------------------------------
+    -- BUTTON
+    ------------------------------------------------
+
+    function page:AddButton(text, callback)
+
+        local button = New("TextButton", {
+
+            Parent = page.Frame,
+
+            Size = UDim2.new(1, 0, 0, 31),
+
+            BackgroundColor3 = C.Element,
+
+            BorderSizePixel = 0,
+
+            Text = text,
+
+            TextColor3 = C.Text,
+            TextSize = 9,
+
+            Font = Enum.Font.GothamMedium,
+
+            AutoButtonColor = false
+        })
+
+        Corner(button, 4)
+
+        button.MouseEnter:Connect(function()
+
+            button.BackgroundColor3 =
+                C.ElementHover
+
+        end)
+
+        button.MouseLeave:Connect(function()
+
+            button.BackgroundColor3 =
+                C.Element
+
+        end)
+
+        button.MouseButton1Click:Connect(function()
+
+            if callback then
+                callback()
+            end
+
+        end)
+
+        return button
+
+    end
+
+    ------------------------------------------------
+    -- SLIDER
+    ------------------------------------------------
+
+    function page:AddSlider(text, min, max, default, callback)
+
+        local value = default or min
+
+        local holder = New("Frame", {
+
+            Parent = page.Frame,
+
+            Size = UDim2.new(1, 0, 0, 46),
+
+            BackgroundColor3 = C.Element,
+
+            BorderSizePixel = 0
+        })
+
+        Corner(holder, 4)
+
+        ------------------------------------------------
+        -- TITLE
+        ------------------------------------------------
+
+        local label = New("TextLabel", {
+
+            Parent = holder,
+
+            Size = UDim2.new(1, -55, 0, 19),
+
+            Position = UDim2.fromOffset(9, 3),
+
+            BackgroundTransparency = 1,
+
+            Text = text,
+
+            TextColor3 = C.Text,
+            TextSize = 9,
+
+            Font = Enum.Font.GothamMedium,
+
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+
+        ------------------------------------------------
+        -- VALUE
+        ------------------------------------------------
+
+        local valueLabel = New("TextLabel", {
+
+            Parent = holder,
+
+            Size = UDim2.fromOffset(40, 19),
+
+            Position = UDim2.new(1, -48, 0, 3),
+
+            BackgroundTransparency = 1,
+
+            Text = tostring(value),
+
+            TextColor3 = C.SubText,
+            TextSize = 8,
+
+            Font = Enum.Font.GothamMedium,
+
+            TextXAlignment = Enum.TextXAlignment.Right
+        })
+
+        ------------------------------------------------
+        -- BAR
+        ------------------------------------------------
+
+        local bar = New("Frame", {
+
+            Parent = holder,
+
+            Size = UDim2.new(1, -18, 0, 3),
+
+            Position = UDim2.fromOffset(9, 32),
+
+            BackgroundColor3 =
+                Color3.fromRGB(38,38,43),
+
+            BorderSizePixel = 0
+        })
+
+        Corner(bar, 3)
+
+        ------------------------------------------------
+        -- FILL
+        ------------------------------------------------
+
+        local percent =
+            (value - min) / (max - min)
+
+        local fill = New("Frame", {
+
+            Parent = bar,
+
+            Size = UDim2.new(percent, 0, 1, 0),
+
+            BackgroundColor3 = C.Accent,
+
+            BorderSizePixel = 0
+        })
+
+        Corner(fill, 3)
+
+        ------------------------------------------------
+        -- KNOB "o"
+        ------------------------------------------------
+
+        local knob = New("Frame", {
+
+            Parent = bar,
+
+            Size = UDim2.fromOffset(8, 8),
+
+            AnchorPoint = Vector2.new(0.5, 0.5),
+
+            Position = UDim2.new(
+                percent,
+                0,
+                0.5,
+                0
+            ),
+
+            BackgroundColor3 = C.Text,
+
+            BorderSizePixel = 0,
+
+            ZIndex = 2
+        })
+
+        Corner(knob, 8)
+
+        ------------------------------------------------
+        -- SLIDER INPUT
+        ------------------------------------------------
+
+        local dragging = false
+
+        local function update(input)
+
+            local percent = math.clamp(
+
+                (
+                    input.Position.X -
+                    bar.AbsolutePosition.X
+                ) / bar.AbsoluteSize.X,
+
+                0,
+                1
+            )
+
+            value = math.floor(
+                min + ((max - min) * percent)
+            )
+
+            valueLabel.Text = tostring(value)
+
+            fill.Size =
+                UDim2.new(percent, 0, 1, 0)
+
+            knob.Position =
+                UDim2.new(
+                    percent,
+                    0,
+                    0.5,
+                    0
+                )
+
+            if callback then
+                callback(value)
+            end
+
+        end
+
+        bar.InputBegan:Connect(function(input)
+
+            if input.UserInputType ==
+                Enum.UserInputType.MouseButton1 then
+
+                dragging = true
+
+                update(input)
+
+            end
+
+        end)
+
+        UIS.InputChanged:Connect(function(input)
+
+            if dragging and input.UserInputType ==
+                Enum.UserInputType.MouseMovement then
+
+                update(input)
+
+            end
+
+        end)
+
+        UIS.InputEnded:Connect(function(input)
+
+            if input.UserInputType ==
+                Enum.UserInputType.MouseButton1 then
+
+                dragging = false
+
+            end
+
+        end)
+
+        return {
+
+            Set = function(_, newValue)
+
+                value =
+                    math.clamp(newValue, min, max)
+
+                local p =
+                    (value - min) /
+                    (max - min)
+
+                valueLabel.Text = tostring(value)
+
+                fill.Size =
+                    UDim2.new(p, 0, 1, 0)
+
+                knob.Position =
+                    UDim2.new(
+                        p,
+                        0,
+                        0.5,
+                        0
+                    )
+
+            end,
+
+            Get = function()
+                return value
+            end
+
+        }
+
+    end
+
+    return page
+end
+
+----------------------------------------------------
+-- UI TOGGLE
+----------------------------------------------------
 
 function NovaUI:Toggle()
-	self.ScreenGui.Enabled = not self.ScreenGui.Enabled
+
+    self.Gui.Enabled =
+        not self.Gui.Enabled
+
 end
 
 return NovaUI
