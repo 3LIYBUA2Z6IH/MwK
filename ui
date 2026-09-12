@@ -66,19 +66,28 @@ local function MakePanel(parent, title)
     local Panel = {}
 
     function Panel:AddToggle(name, default, cb)
-        local on = default or false
-        local f = New("Frame",{Parent=cont,BackgroundTransparency=1,Size=UDim2.new(1,0,0,25)})
-        local lbl = New("TextLabel",{Name="ItemName",Parent=f,BackgroundTransparency=1,Size=UDim2.new(0.6,0,1,0),Font=Enum.Font.GothamMedium,Text=name,TextColor3=on and Theme.Text or Theme.SubText,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left})
-        local box = New("Frame",{Parent=f,BackgroundColor3=Theme.Input,Position=UDim2.new(1,0,0.5,0),Size=UDim2.fromOffset(18,18),AnchorPoint=Vector2.new(1,0.5)},{New("UICorner",{CornerRadius=UDim.new(0,4)})})
-        local sq  = New("Frame",{Parent=box,BackgroundColor3=Theme.Accent,Position=UDim2.new(0.5,0,0.5,0),Size=on and UDim2.fromOffset(12,12) or UDim2.fromOffset(0,0),AnchorPoint=Vector2.new(0.5,0.5)},{New("UICorner",{CornerRadius=UDim.new(0,2)})})
-        local btn = New("TextButton",{Parent=f,BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),Text=""})
-        btn.MouseButton1Click:Connect(function()
-            on=not on
+        local on=default or false
+        local f=New("Frame",{Parent=cont,BackgroundTransparency=1,Size=UDim2.new(1,0,0,25)})
+        local lbl=New("TextLabel",{Name="ItemName",Parent=f,BackgroundTransparency=1,Size=UDim2.new(0.6,0,1,0),Font=Enum.Font.GothamMedium,Text=name,TextColor3=on and Theme.Text or Theme.SubText,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left})
+        local box=New("Frame",{Parent=f,BackgroundColor3=Theme.Input,Position=UDim2.new(1,0,0.5,0),Size=UDim2.fromOffset(18,18),AnchorPoint=Vector2.new(1,0.5)},{New("UICorner",{CornerRadius=UDim.new(0,4)})})
+        local sq=New("Frame",{Parent=box,BackgroundColor3=Theme.Accent,Position=UDim2.new(0.5,0,0.5,0),Size=on and UDim2.fromOffset(12,12) or UDim2.fromOffset(0,0),AnchorPoint=Vector2.new(0.5,0.5)},{New("UICorner",{CornerRadius=UDim.new(0,2)})})
+        local btn=New("TextButton",{Parent=f,BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),Text=""})
+
+        local function setState(v,fire)
+            on=v and true or false
             TweenService:Create(sq,TweenInfo.new(0.2),{Size=on and UDim2.fromOffset(12,12) or UDim2.fromOffset(0,0)}):Play()
             TweenService:Create(lbl,TweenInfo.new(0.2),{TextColor3=on and Theme.Text or Theme.SubText}):Play()
-            if cb then cb(on) end
+            if fire and cb then cb(on) end
+        end
+
+        btn.MouseButton1Click:Connect(function()
+            setState(not on,true)
         end)
-        return f
+
+        local obj={Frame=f}
+        function obj:Set(v) setState(v,true) end
+        function obj:Get() return on end
+        return obj
     end
 
     function Panel:AddSlider(name, min, max, default, cb)
@@ -110,72 +119,198 @@ local function MakePanel(parent, title)
         return f
     end
 
+    -- Combined toggle + optional keybind.
+    -- `keybind = true` is handled by the caller through AddKey.
     function Panel:AddKey(name, opts)
         if typeof(opts)=="EnumItem" then opts={key=opts} end
         opts=opts or {}
-        local ckey=opts.key or Enum.KeyCode.Unknown
-        local cmode=opts.mode or "Toggle"
-        local cstate=opts.state or false
-        local cb=opts.callback or function()end
+
+        local ckey=opts.key or opts.Key or Enum.KeyCode.Unknown
+        local cmode=opts.mode or opts.Mode or "Toggle"
+        local cstate=opts.state
+        if cstate == nil then cstate = opts.Default or false end
+        local cb=opts.callback or opts.Callback or function()end
         local only=opts.onlyToggle or false
-        local active=false
+
+        local f=New("Frame",{Parent=cont,BackgroundTransparency=1,Size=UDim2.new(1,0,0,25)})
+        local nl=New("TextLabel",{Name="ItemName",Parent=f,BackgroundTransparency=1,Size=UDim2.new(1,-130,1,0),Font=Enum.Font.GothamMedium,Text=name,TextColor3=cstate and Theme.Text or Theme.SubText,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left})
+        local box=New("Frame",{Parent=f,BackgroundColor3=Theme.Input,Position=UDim2.new(1,0,0.5,0),Size=UDim2.fromOffset(18,18),AnchorPoint=Vector2.new(1,0.5)},{New("UICorner",{CornerRadius=UDim.new(0,4)})})
+        local sq=New("Frame",{Parent=box,BackgroundColor3=Theme.Accent,Position=UDim2.new(0.5,0,0.5,0),Size=cstate and UDim2.fromOffset(12,12) or UDim2.fromOffset(0,0),AnchorPoint=Vector2.new(0.5,0.5)},{New("UICorner",{CornerRadius=UDim.new(0,2)})})
+        local tb=New("TextButton",{Parent=box,BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),Text=""})
+
         local kc,kuc,lc
+        local active=false
 
-        local f = New("Frame",{Parent=cont,BackgroundTransparency=1,Size=UDim2.new(1,0,0,25)})
-        local nl = New("TextLabel",{Name="ItemName",Parent=f,BackgroundTransparency=1,Size=UDim2.new(1,-130,1,0),Font=Enum.Font.GothamMedium,Text=name,TextColor3=cstate and Theme.Text or Theme.SubText,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left})
-        local box= New("Frame",{Parent=f,BackgroundColor3=Theme.Input,Position=UDim2.new(1,0,0.5,0),Size=UDim2.fromOffset(18,18),AnchorPoint=Vector2.new(1,0.5)},{New("UICorner",{CornerRadius=UDim.new(0,4)})})
-        local sq = New("Frame",{Parent=box,BackgroundColor3=Theme.Accent,Position=UDim2.new(0.5,0,0.5,0),Size=cstate and UDim2.fromOffset(12,12) or UDim2.fromOffset(0,0),AnchorPoint=Vector2.new(0.5,0.5)},{New("UICorner",{CornerRadius=UDim.new(0,2)})})
-        local tb = New("TextButton",{Parent=box,BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),Text=""})
+        local function updateVisual()
+            TweenService:Create(sq,TweenInfo.new(0.2),{Size=cstate and UDim2.fromOffset(12,12) or UDim2.fromOffset(0,0)}):Play()
+            TweenService:Create(nl,TweenInfo.new(0.2),{TextColor3=cstate and Theme.Text or Theme.SubText}):Play()
+        end
 
-        local function mkconn()
+        local function setState(v, fire)
+            cstate=v and true or false
+            active=cstate
+            updateVisual()
+            if fire and cb then cb(cstate) end
+        end
+
+        local function disconnectKey()
             if kc then kc:Disconnect() kc=nil end
             if kuc then kuc:Disconnect() kuc=nil end
-            if ckey~=Enum.KeyCode.Unknown and cstate then
-                if cmode=="Toggle" then
-                    kc=UserInputService.InputBegan:Connect(function(i,gp)
-                        if gp then return end
-                        if i.UserInputType==Enum.UserInputType.Keyboard and i.KeyCode==ckey then active=not active cb(active) end
-                    end)
-                elseif cmode=="Hold" then
-                    kc=UserInputService.InputBegan:Connect(function(i,gp) if not gp and i.UserInputType==Enum.UserInputType.Keyboard and i.KeyCode==ckey then cb(true) end end)
-                    kuc=UserInputService.InputEnded:Connect(function(i,gp) if not gp and i.UserInputType==Enum.UserInputType.Keyboard and i.KeyCode==ckey then cb(false) end end)
-                end
+        end
+
+        local function connectKey()
+            disconnectKey()
+            if ckey==Enum.KeyCode.Unknown then return end
+
+            if cmode=="Toggle" then
+                kc=UserInputService.InputBegan:Connect(function(i,gp)
+                    if gp then return end
+                    if i.UserInputType==Enum.UserInputType.Keyboard and i.KeyCode==ckey then
+                        setState(not cstate,true)
+                    end
+                end)
+            elseif cmode=="Hold" then
+                kc=UserInputService.InputBegan:Connect(function(i,gp)
+                    if not gp and i.UserInputType==Enum.UserInputType.Keyboard and i.KeyCode==ckey then
+                        setState(true,true)
+                    end
+                end)
+                kuc=UserInputService.InputEnded:Connect(function(i,gp)
+                    if not gp and i.UserInputType==Enum.UserInputType.Keyboard and i.KeyCode==ckey then
+                        setState(false,true)
+                    end
+                end)
+            elseif cmode=="Always" then
+                setState(true,true)
             end
         end
 
-        local function updstate(ns)
-            cstate=ns
-            TweenService:Create(sq,TweenInfo.new(0.2),{Size=cstate and UDim2.fromOffset(12,12) or UDim2.fromOffset(0,0)}):Play()
-            TweenService:Create(nl,TweenInfo.new(0.2),{TextColor3=cstate and Theme.Text or Theme.SubText}):Play()
-            if not cstate and active then active=false cb(false) end
-        end
-        tb.MouseButton1Click:Connect(function() updstate(not cstate) mkconn() end)
+        tb.MouseButton1Click:Connect(function()
+            if cmode=="Always" then return end
+            setState(not cstate,true)
+        end)
 
-        local kb = New("TextButton",{Parent=f,BackgroundColor3=Theme.Input,Position=UDim2.new(1,-25,0.5,0),Size=UDim2.fromOffset(50,18),AnchorPoint=Vector2.new(1,0.5),Text=KN(ckey),Font=Enum.Font.Gotham,TextSize=11,TextColor3=Theme.SubText,AutoButtonColor=false},{New("UICorner",{CornerRadius=UDim.new(0,4)})})
+        local kb=New("TextButton",{Parent=f,BackgroundColor3=Theme.Input,Position=UDim2.new(1,-25,0.5,0),Size=UDim2.fromOffset(50,18),AnchorPoint=Vector2.new(1,0.5),Text=KN(ckey),Font=Enum.Font.Gotham,TextSize=11,TextColor3=Theme.SubText,AutoButtonColor=false},{New("UICorner",{CornerRadius=UDim.new(0,4)})})
 
+        local mb
         if not only then
-            local mb=New("TextButton",{Parent=f,BackgroundTransparency=1,Position=UDim2.new(1,-80,0.5,0),Size=UDim2.fromOffset(40,18),AnchorPoint=Vector2.new(1,0.5),Text=cmode,Font=Enum.Font.Gotham,TextSize=11,TextColor3=Theme.SubText})
-            mb.MouseButton1Click:Connect(function() if active then active=false cb(false) end cmode=(cmode=="Toggle") and "Hold" or "Toggle" mb.Text=cmode mkconn() end)
-        else cmode="Toggle" end
+            mb=New("TextButton",{Parent=f,BackgroundTransparency=1,Position=UDim2.new(1,-80,0.5,0),Size=UDim2.fromOffset(40,18),AnchorPoint=Vector2.new(1,0.5),Text=cmode,Font=Enum.Font.Gotham,TextSize=11,TextColor3=Theme.SubText})
+            mb.MouseButton1Click:Connect(function()
+                if cmode=="Always" then return end
+                setState(false,false)
+                cmode=(cmode=="Toggle") and "Hold" or "Toggle"
+                mb.Text=cmode
+                connectKey()
+            end)
+        end
 
         local listening=false
         kb.MouseButton1Click:Connect(function()
             if listening then return end
-            listening=true kb.Text="..." kb.TextColor3=Theme.Accent
+            listening=true
+            kb.Text="..."
+            kb.TextColor3=Theme.Accent
+
             if lc then lc:Disconnect() lc=nil end
-            lc=UserInputService.InputBegan:Connect(function(i)
+            lc=UserInputService.InputBegan:Connect(function(i,gp)
+                if gp then return end
                 if i.UserInputType==Enum.UserInputType.Keyboard then
                     ckey=(i.KeyCode==Enum.KeyCode.Escape or i.KeyCode==Enum.KeyCode.Backspace) and Enum.KeyCode.Unknown or i.KeyCode
-                    kb.Text=KN(ckey) kb.TextColor3=Theme.SubText listening=false
-                    if lc then lc:Disconnect() lc=nil end mkconn()
+                    kb.Text=KN(ckey)
+                    kb.TextColor3=Theme.SubText
+                    listening=false
+                    if lc then lc:Disconnect() lc=nil end
+                    connectKey()
                 elseif i.UserInputType==Enum.UserInputType.MouseButton1 then
-                    listening=false kb.Text=KN(ckey) kb.TextColor3=Theme.SubText
+                    listening=false
+                    kb.Text=KN(ckey)
+                    kb.TextColor3=Theme.SubText
                     if lc then lc:Disconnect() lc=nil end
                 end
             end)
         end)
-        mkconn()
-        return f
+
+        connectKey()
+
+        local obj={Frame=f}
+        function obj:Set(v)
+            setState(v,true)
+        end
+        function obj:Get()
+            return cstate
+        end
+        function obj:SetKeybind(k)
+            ckey=k or Enum.KeyCode.Unknown
+            kb.Text=KN(ckey)
+            connectKey()
+        end
+        function obj:GetKeybind()
+            return ckey
+        end
+        function obj:SetMode(mode)
+            if mode~="Toggle" and mode~="Hold" and mode~="Always" then return end
+            setState(false,false)
+            cmode=mode
+            if mb then mb.Text=cmode end
+            connectKey()
+        end
+        function obj:GetMode()
+            return cmode
+        end
+
+        return obj
+    end
+
+    -- Standalone editable keybind.
+    function Panel:AddKeybind(name, defaultKey, cb)
+        local key=defaultKey or Enum.KeyCode.Unknown
+        local row=New("Frame",{Parent=cont,BackgroundTransparency=1,Size=UDim2.new(1,0,0,25)})
+        New("TextLabel",{Parent=row,BackgroundTransparency=1,Size=UDim2.new(1,-65,1,0),Font=Enum.Font.GothamMedium,Text=name,TextColor3=Theme.Text,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left})
+        local button=New("TextButton",{Parent=row,BackgroundColor3=Theme.Input,Position=UDim2.new(1,0,0.5,0),Size=UDim2.fromOffset(50,18),AnchorPoint=Vector2.new(1,0.5),Text=KN(key),Font=Enum.Font.Gotham,TextSize=11,TextColor3=Theme.SubText,AutoButtonColor=false},{New("UICorner",{CornerRadius=UDim.new(0,4)})})
+
+        local listening=false
+        local conn
+        local obj={Frame=row}
+
+        local function setKey(k,fire)
+            key=k or Enum.KeyCode.Unknown
+            button.Text=KN(key)
+            if fire and cb then cb(key) end
+        end
+
+        function obj:Set(k)
+            setKey(k,true)
+        end
+        function obj:Get()
+            return key
+        end
+
+        button.MouseButton1Click:Connect(function()
+            if listening then return end
+            listening=true
+            button.Text="..."
+            button.TextColor3=Theme.Accent
+
+            if conn then conn:Disconnect() end
+            conn=UserInputService.InputBegan:Connect(function(i,gp)
+                if gp then return end
+                if i.UserInputType==Enum.UserInputType.Keyboard then
+                    setKey((i.KeyCode==Enum.KeyCode.Escape or i.KeyCode==Enum.KeyCode.Backspace) and Enum.KeyCode.Unknown or i.KeyCode,true)
+                    button.TextColor3=Theme.SubText
+                    listening=false
+                    conn:Disconnect()
+                    conn=nil
+                elseif i.UserInputType==Enum.UserInputType.MouseButton1 then
+                    button.Text=KN(key)
+                    button.TextColor3=Theme.SubText
+                    listening=false
+                    conn:Disconnect()
+                    conn=nil
+                end
+            end)
+        end)
+
+        return obj
     end
 
     function Panel:AddESPToggle(name, defColor, cb)
@@ -389,7 +524,7 @@ function HyperionLib:CreateWindow(cfg)
     cfg=cfg or {}
     local wname=cfg.Name or "Script"
     local wsub=cfg.SubName or ""
-    local wkey=cfg.Key or Enum.KeyCode.RightShift
+    local wkey=cfg.MenuKeybind or cfg.Key or Enum.KeyCode.RightShift
 
     local SG=New("ScreenGui",{Name=wname.."_GUI",Parent=RunService:IsStudio() and LocalPlayer.PlayerGui or CoreGui,ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling})
     local Main=New("CanvasGroup",{Name="Main",Parent=SG,BackgroundColor3=Theme.Background,Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(750,550),AnchorPoint=Vector2.new(0.5,0.5),GroupTransparency=1,Visible=false},{New("UICorner",{CornerRadius=UDim.new(0,10)})})
@@ -397,6 +532,9 @@ function HyperionLib:CreateWindow(cfg)
 
     local Pages,PageColumns,Tabs,SubTabContainers,SubTabs={},{},{},{},{}
     local CT,CS=nil,nil
+    local MenuInputConnection=nil
+    local vis=true
+    local TM
 
     local SB=New("Frame",{Parent=Main,BackgroundColor3=Theme.Sidebar,Size=UDim2.new(0,180,1,0),ZIndex=2},{New("UICorner",{CornerRadius=UDim.new(0,10)}),New("Frame",{BackgroundColor3=Theme.Sidebar,BorderSizePixel=0,Position=UDim2.new(1,-5,0,0),Size=UDim2.new(0,5,1,0),ZIndex=2})})
     New("TextLabel",{Parent=SB,BackgroundTransparency=1,Position=UDim2.new(0,20,0,20),Size=UDim2.new(0,140,0,30),Font=Enum.Font.GothamBold,Text=wname,TextColor3=Theme.Accent,TextSize=22,TextXAlignment=Enum.TextXAlignment.Left},{New("Frame",{BackgroundColor3=Color3.new(1,1,1),Size=UDim2.fromOffset(4,4),Position=UDim2.new(0,-8,0.5,-2)},{New("UICorner",{CornerRadius=UDim.new(1,0)})})})
@@ -483,10 +621,150 @@ function HyperionLib:CreateWindow(cfg)
     -- Window API
     local W={}
 
-    function W:CreateTab(name, hasSub)
+    -- Modern API:
+    -- local Window = Library:Window({Name=..., SubName=..., MenuKeybind=...})
+    -- local Page = Window:Page({Name=..., Icon=...})
+    -- local Section = Page:Section({Name=..., Side=1})
+    local function ExtendSection(section)
+        -- Toggle:
+        --   keybind = false -> normal mouse toggle
+        --   keybind = true  -> toggle + editable keybind in the same row
+        function section:Toggle(cfg)
+            cfg=cfg or {}
+
+            local useKey=cfg.keybind
+            if useKey==nil then useKey=cfg.Keybind end
+
+            if useKey then
+                local obj=self:AddKey(cfg.Name or "Toggle",{
+                    key=cfg.Key or cfg.DefaultKey or Enum.KeyCode.Unknown,
+                    state=cfg.Default or false,
+                    mode=cfg.Mode or "Toggle",
+                    callback=cfg.Callback,
+                    onlyToggle=cfg.OnlyToggle
+                })
+                return obj
+            end
+
+            local obj=self:AddToggle(cfg.Name or "Toggle",cfg.Default or false,cfg.Callback)
+            function obj:Keybind(_)
+                -- `keybind` is intended to be decided at creation time.
+                return self
+            end
+            return obj
+        end
+
+        function section:Slider(cfg)
+            cfg=cfg or {}
+            return self:AddSlider(
+                cfg.Name or "Slider",
+                cfg.Min or 0,
+                cfg.Max or 100,
+                cfg.Default or 0,
+                cfg.Callback
+            )
+        end
+
+        function section:Dropdown(cfg)
+            cfg=cfg or {}
+            local options={}
+            for _,v in ipairs(cfg.Items or {}) do
+                table.insert(options,{text=tostring(v),value=v})
+            end
+            return self:AddDropdown(cfg.Name or "Dropdown",options,cfg.Callback)
+        end
+
+        function section:Keybind(cfg)
+            cfg=cfg or {}
+            return self:AddKeybind(cfg.Name or "Keybind",cfg.Default,cfg.Callback)
+        end
+
+        function section:Colorpicker(cfg)
+            cfg=cfg or {}
+            return self:AddESPToggle(cfg.Name or "Color",cfg.Default or Color3.new(1,1,1),function(_,color)
+                if cfg.Callback then cfg.Callback(color,1) end
+            end)
+        end
+
+        return section
+    end
+
+    function W:Page(cfgOrName)
+        cfgOrName=cfgOrName or {}
+        local cfgPage=type(cfgOrName)=="table" and cfgOrName or {Name=tostring(cfgOrName)}
+        local name=cfgPage.Name or "Page"
+
+        if Pages[name] then
+            local existing={}
+            local cols=PageColumns[Pages[name]]
+            function existing:Section(secCfg)
+                secCfg=secCfg or {}
+                local side=secCfg.Side or 1
+                local col=(side=="Right" or side=="right" or side==2) and cols.RightCol or cols.LeftCol
+                return ExtendSection(MakePanel(col,secCfg.Name or "Section"))
+            end
+            existing.Name=name
+            existing.Icon=cfgPage.Icon
+            return existing
+        end
+
+        -- Reuse the legacy tab creator so the modern Page is also visible in the sidebar.
+        local T=W:CreateTab(name,false,cfgPage.Icon)
+        local cols=PageColumns[Pages[name]]
+        local P={Name=name,Icon=cfgPage.Icon}
+
+        function P:Section(secCfg)
+            secCfg=secCfg or {}
+            local side=secCfg.Side or 1
+            local col=(side=="Right" or side=="right" or side==2) and cols.RightCol or cols.LeftCol
+            return ExtendSection(MakePanel(col,secCfg.Name or "Section"))
+        end
+
+        P.AddSection=P.Section
+        return P
+    end
+
+    function W:SetMenuKeybind(newKey)
+        wkey=newKey or Enum.KeyCode.Unknown
+        if MenuInputConnection then
+            MenuInputConnection:Disconnect()
+            MenuInputConnection=nil
+        end
+        if wkey~=Enum.KeyCode.Unknown then
+            MenuInputConnection=UserInputService.InputBegan:Connect(function(i,gp)
+                if gp then return end
+                if i.UserInputType==Enum.UserInputType.Keyboard and i.KeyCode==wkey then
+                    vis=not vis
+                    TM(vis)
+                end
+            end)
+        end
+        return wkey
+    end
+
+    function W:GetMenuKeybind()
+        return wkey
+    end
+
+    function W:CreateSettingsPage(_window)
+        local page=W:Page({Name="Config"})
+        local sec=page:Section({Name="Menu",Side=1})
+
+        sec:AddKeybind("Hide / Show Menu",wkey,function(k)
+            W:SetMenuKeybind(k)
+        end)
+
+        return page
+    end
+
+
+    function W:CreateTab(name, hasSub, icon)
         local btn=New("TextButton",{Parent=Nav,BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=1,Size=UDim2.new(1,0,0,40),Text="",AutoButtonColor=false},{New("UICorner",{CornerRadius=UDim.new(0,8)})})
         btn.MouseButton1Click:Connect(function() Switch(name) end)
-        New("TextLabel",{Name="Content",Parent=btn,BackgroundTransparency=1,Position=UDim2.new(0,15,0,0),Size=UDim2.new(1,-15,1,0),Font=Enum.Font.GothamBold,Text=name,TextColor3=Color3.fromRGB(120,120,120),TextSize=14,TextXAlignment=Enum.TextXAlignment.Left})
+        if icon then
+            New("ImageLabel",{Name="Icon",Parent=btn,BackgroundTransparency=1,Position=UDim2.new(0,10,0.5,-8),Size=UDim2.fromOffset(16,16),Image=tostring(icon)})
+        end
+        New("TextLabel",{Name="Content",Parent=btn,BackgroundTransparency=1,Position=UDim2.new(0,icon and 34 or 15,0,0),Size=UDim2.new(1,-(icon and 34 or 15),1,0),Font=Enum.Font.GothamBold,Text=name,TextColor3=Color3.fromRGB(120,120,120),TextSize=14,TextXAlignment=Enum.TextXAlignment.Left})
         Tabs[name]=btn
 
         local T={}
@@ -526,9 +804,9 @@ function HyperionLib:CreateWindow(cfg)
         Switch(first)
     end
 
-    -- Toggle key
-    local vis=true local atw=nil
-    local function TM(s)
+    -- Hide/Show Menu key
+    local atw=nil
+    TM=function(s)
         if atw then atw:Cancel() end
         if s then
             LastMB=UserInputService.MouseBehavior LastMI=UserInputService.MouseIconEnabled
@@ -541,7 +819,20 @@ function HyperionLib:CreateWindow(cfg)
             atw.Completed:Connect(function(st) if st==Enum.PlaybackState.Completed and not vis then Main.Visible=false end end)
         end
     end
-    UserInputService.InputBegan:Connect(function(i) if i.KeyCode==wkey then vis=not vis TM(vis) end end)
+
+    local function ConnectMenuKey()
+        if MenuInputConnection then MenuInputConnection:Disconnect() MenuInputConnection=nil end
+        if wkey~=Enum.KeyCode.Unknown then
+            MenuInputConnection=UserInputService.InputBegan:Connect(function(i,gp)
+                if gp then return end
+                if i.UserInputType==Enum.UserInputType.Keyboard and i.KeyCode==wkey then
+                    vis=not vis
+                    TM(vis)
+                end
+            end)
+        end
+    end
+    ConnectMenuKey()
 
     -- Avatar
     task.spawn(function()
@@ -558,6 +849,11 @@ function HyperionLib:CreateWindow(cfg)
     TweenService:Create(Main,TweenInfo.new(0.6,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),{Size=UDim2.fromOffset(750,550),GroupTransparency=0}):Play()
 
     return W
+end
+
+-- Modern constructor alias matching the requested library style.
+function HyperionLib:Window(cfg)
+    return self:CreateWindow(cfg or {})
 end
 
 return HyperionLib
