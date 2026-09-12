@@ -9,7 +9,6 @@ local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
-local Mouse = Player:GetMouse()
 
 for _, gui in ipairs(PlayerGui:GetChildren()) do
     if gui:IsA("ScreenGui") and gui.Name:sub(1, 6) == "NovaUI" then
@@ -52,12 +51,39 @@ local function Stroke(obj)
 end
 
 local function Inside(obj, x, y)
-    if not obj or not obj.Parent then
+    if not obj or not obj.Parent or not obj.Visible then
         return false
     end
     local p = obj.AbsolutePosition
     local s = obj.AbsoluteSize
     return x >= p.X and x <= p.X + s.X and y >= p.Y and y <= p.Y + s.Y
+end
+
+local function PlacePopup(button, popup)
+    local p = button.AbsolutePosition
+    local s = button.AbsoluteSize
+    local camera = workspace.CurrentCamera
+    local viewport = camera and camera.ViewportSize or Vector2.new(800, 600)
+    local width = popup.AbsoluteSize.X > 0 and popup.AbsoluteSize.X or 210
+    local height = popup.AbsoluteSize.Y > 0 and popup.AbsoluteSize.Y or 225
+
+    local px = p.X + s.X - width
+    local py = p.Y + s.Y + 5
+
+    if px < 5 then
+        px = 5
+    end
+    if px + width > viewport.X - 5 then
+        px = viewport.X - width - 5
+    end
+    if py + height > viewport.Y - 5 then
+        py = p.Y - height - 5
+    end
+    if py < 5 then
+        py = 5
+    end
+
+    popup.Position = UDim2.fromOffset(px, py)
 end
 
 function NovaUI.new(title)
@@ -187,56 +213,28 @@ function NovaUI.new(title)
         end
     end)
 
-    Mouse.Button1Down:Connect(function()
+    UIS.InputBegan:Connect(function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+            return
+        end
         if not self.Gui.Enabled then
             return
         end
 
-        local x, y = Mouse.X, Mouse.Y
         local popup = self.ActiveColorPicker
         local button = self.ActiveColorButton
-
-        if button and button.Parent and Inside(button, x, y) then
-            if popup and popup.Visible then
-                popup.Visible = false
-                self.ActiveColorPicker = nil
-                self.ActiveColorButton = nil
-                return
-            end
-
-            if popup then
-                local p = button.AbsolutePosition
-                local s = button.AbsoluteSize
-                local camera = workspace.CurrentCamera
-                local viewport = camera and camera.ViewportSize or Vector2.new(800, 600)
-                local width, height = 210, 225
-
-                local px = p.X + s.X - width
-                local py = p.Y + s.Y + 5
-
-                if px < 5 then px = 5 end
-                if px + width > viewport.X - 5 then
-                    px = viewport.X - width - 5
-                end
-                if py + height > viewport.Y - 5 then
-                    py = p.Y - height - 5
-                end
-                if py < 5 then py = 5 end
-
-                popup.Position = UDim2.fromOffset(px, py)
-                popup.Visible = true
-            end
+        if not popup or not popup.Visible then
             return
         end
 
-        if popup and popup.Visible then
-            if Inside(popup, x, y) then
-                return
-            end
-            popup.Visible = false
-            self.ActiveColorPicker = nil
-            self.ActiveColorButton = nil
+        local x, y = input.Position.X, input.Position.Y
+        if Inside(popup, x, y) or Inside(button, x, y) then
+            return
         end
+
+        popup.Visible = false
+        self.ActiveColorPicker = nil
+        self.ActiveColorButton = nil
     end)
 
     return self
@@ -379,7 +377,7 @@ function NovaUI:AddPage(name, icon)
         })
         Corner(toggleButton, 4)
 
-        local redSquare = New("Frame", {
+        local colorSquare = New("Frame", {
             Parent = toggleButton,
             BackgroundColor3 = currentColor,
             Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -387,10 +385,10 @@ function NovaUI:AddPage(name, icon)
             AnchorPoint = Vector2.new(0.5, 0.5),
             ZIndex = 16
         })
-        Corner(redSquare, 2)
+        Corner(colorSquare, 2)
 
         local function refreshToggle()
-            TweenService:Create(redSquare, TweenInfo.new(0.12), {
+            TweenService:Create(colorSquare, TweenInfo.new(0.12), {
                 Size = enabled and UDim2.fromOffset(14, 14) or UDim2.fromOffset(0, 0),
                 BackgroundColor3 = currentColor
             }):Play()
@@ -405,8 +403,13 @@ function NovaUI:AddPage(name, icon)
             refreshToggle()
         end)
 
+        local popup
+        local colorButton
+        local hue, sat, val
+        local applyColor
+
         if colorEnabled then
-            local colorButton = New("TextButton", {
+            colorButton = New("TextButton", {
                 Parent = holder,
                 Size = UDim2.fromOffset(20, 20),
                 Position = UDim2.new(1, -47, 0.5, -10),
@@ -421,7 +424,7 @@ function NovaUI:AddPage(name, icon)
             Corner(colorButton, 4)
             Stroke(colorButton)
 
-            local popup = New("Frame", {
+            popup = New("Frame", {
                 Parent = self.Gui,
                 Size = UDim2.fromOffset(210, 225),
                 BackgroundColor3 = C.Top,
@@ -457,7 +460,7 @@ function NovaUI:AddPage(name, icon)
             Corner(preview, 4)
             Stroke(preview)
 
-            local hue, sat, val = currentColor:ToHSV()
+            hue, sat, val = currentColor:ToHSV()
 
             local svSquare = New("Frame", {
                 Parent = popup,
@@ -568,10 +571,13 @@ function NovaUI:AddPage(name, icon)
             Corner(hexBox, 4)
             Stroke(hexBox)
 
-            local function applyColor()
+            local svDragging = false
+            local hueDragging = false
+
+            applyColor = function()
                 currentColor = Color3.fromHSV(hue, sat, val)
                 colorButton.BackgroundColor3 = currentColor
-                redSquare.BackgroundColor3 = currentColor
+                colorSquare.BackgroundColor3 = currentColor
                 preview.BackgroundColor3 = currentColor
                 svSquare.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
                 svCursor.Position = UDim2.new(sat, 0, 1 - val, 0)
@@ -583,9 +589,6 @@ function NovaUI:AddPage(name, icon)
                     math.floor(currentColor.B * 255 + 0.5)
                 )
             end
-
-            local svDragging = false
-            local hueDragging = false
 
             local function setSV(input)
                 local size = svSquare.AbsoluteSize
@@ -639,8 +642,25 @@ function NovaUI:AddPage(name, icon)
                 end
             end)
 
-            self.ActiveColorButton = colorButton
-            self.ActiveColorPicker = popup
+            -- Open and close the picker directly from the color button.
+            colorButton.MouseButton1Click:Connect(function()
+                if self.ActiveColorPicker and self.ActiveColorPicker ~= popup then
+                    self.ActiveColorPicker.Visible = false
+                end
+
+                if popup.Visible then
+                    popup.Visible = false
+                    self.ActiveColorPicker = nil
+                    self.ActiveColorButton = nil
+                    return
+                end
+
+                self.ActiveColorButton = colorButton
+                self.ActiveColorPicker = popup
+                PlacePopup(colorButton, popup)
+                popup.Visible = true
+            end)
+
             applyColor()
         end
 
@@ -716,7 +736,7 @@ function NovaUI:AddPage(name, icon)
                     return
                 end
                 currentColor = color
-                redSquare.BackgroundColor3 = color
+                colorSquare.BackgroundColor3 = color
                 if colorEnabled then
                     local h, s, v = color:ToHSV()
                     hue, sat, val = h, s, v
