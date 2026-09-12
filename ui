@@ -58,8 +58,8 @@ function NovaUI.new(title)
 
     self.Main = New("Frame", {
         Parent = self.Gui,
-        Size = UDim2.fromOffset(290, 240),
-        Position = UDim2.new(0.5, -145, 0.5, -120),
+        Size = UDim2.fromOffset(220, 240),
+        Position = UDim2.new(0.5, -110, 0.5, -120),
         BackgroundColor3 = C.Background,
         BorderSizePixel = 0
     })
