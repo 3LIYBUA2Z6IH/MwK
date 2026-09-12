@@ -289,13 +289,16 @@ function NovaUI:AddPage(name, icon)
             TextYAlignment = Enum.TextYAlignment.Center
         })
 
-        local box = New("Frame", {
+        local box = New("TextButton", {
             Parent = holder,
             BackgroundColor3 = C.Element,
             Position = UDim2.new(1, -18, 0.5, 0),
             Size = UDim2.fromOffset(18, 18),
             AnchorPoint = Vector2.new(1, 0.5),
-            ZIndex = 3
+            BorderSizePixel = 0,
+            Text = "",
+            AutoButtonColor = false,
+            ZIndex = 6
         })
         Corner(box, 4)
 
@@ -305,7 +308,7 @@ function NovaUI:AddPage(name, icon)
             Position = UDim2.new(0.5, 0, 0.5, 0),
             Size = enabled and UDim2.fromOffset(12, 12) or UDim2.fromOffset(0, 0),
             AnchorPoint = Vector2.new(0.5, 0.5),
-            ZIndex = 4
+            ZIndex = 7
         })
         Corner(redSquare, 2)
 
@@ -322,6 +325,11 @@ function NovaUI:AddPage(name, icon)
                 callback(enabled)
             end
         end
+
+        box.MouseButton1Click:Connect(function()
+            enabled = not enabled
+            updateToggle()
+        end)
 
         local bindButton
 
@@ -347,8 +355,9 @@ function NovaUI:AddPage(name, icon)
                 if recording then
                     return
                 end
+
                 recording = true
-                bindButton.Text = "..."
+                bindButton.Text = "Press key..."
                 bindButton.TextColor3 = C.Text
             end)
 
@@ -377,21 +386,6 @@ function NovaUI:AddPage(name, icon)
                 end
             end)
         end
-
-        local btn = New("TextButton", {
-            Parent = holder,
-            BackgroundTransparency = 1,
-            Size = bindEnabled and UDim2.new(1, -100, 1, 0) or UDim2.new(1, 0, 1, 0),
-            Position = UDim2.fromOffset(0, 0),
-            Text = "",
-            AutoButtonColor = false,
-            ZIndex = 1
-        })
-
-        btn.MouseButton1Click:Connect(function()
-            enabled = not enabled
-            updateToggle()
-        end)
 
         return {
             Set = function(_, state)
