@@ -59,6 +59,23 @@ local function ContainsGuiObject(list, target)
     return false
 end
 
+local function PlacePopup(popup, button)
+    local p = button.AbsolutePosition
+    local s = button.AbsoluteSize
+    local camera = workspace.CurrentCamera
+    local viewport = camera and camera.ViewportSize or Vector2.new(800, 600)
+    local width, height = 210, 225
+    local x = p.X + s.X - width
+    local y = p.Y + s.Y + 5
+
+    if x < 5 then x = 5 end
+    if x + width > viewport.X - 5 then x = viewport.X - width - 5 end
+    if y + height > viewport.Y - 5 then y = p.Y - height - 5 end
+    if y < 5 then y = 5 end
+
+    popup.Position = UDim2.fromOffset(x, y)
+end
+
 function NovaUI.new(title)
     local self = setmetatable({}, NovaUI)
     self.Pages = {}
@@ -66,6 +83,7 @@ function NovaUI.new(title)
     self.ActiveColorPicker = nil
     self.ActiveColorButton = nil
     self.ColorButtons = {}
+    self.ColorPickers = {}
 
     self.Gui = New("ScreenGui", {
         Name = "NovaUI_300H",
@@ -122,6 +140,9 @@ function NovaUI.new(title)
     })
     close.MouseButton1Click:Connect(function()
         self.Gui.Enabled = false
+        if self.ActiveColorPicker then
+            self.ActiveColorPicker.Visible = false
+        end
         self.ActiveColorPicker = nil
         self.ActiveColorButton = nil
     end)
@@ -134,12 +155,14 @@ function NovaUI.new(title)
         BorderSizePixel = 0,
         ZIndex = 11
     })
+
     New("UIListLayout", {
         Parent = self.Sidebar,
         SortOrder = Enum.SortOrder.LayoutOrder,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
         Padding = UDim.new(0, 4)
     })
+
     local sidePadding = Instance.new("UIPadding")
     sidePadding.PaddingTop = UDim.new(0, 7)
     sidePadding.Parent = self.Sidebar
@@ -197,7 +220,7 @@ function NovaUI.new(title)
         end
 
         if clickedButton then
-            local picker = clickedButton._NovaPicker
+            local picker = self.ColorPickers[clickedButton]
             if not picker then return end
 
             if popup == picker and picker.Visible then
@@ -211,20 +234,7 @@ function NovaUI.new(title)
                 popup.Visible = false
             end
 
-            local p = clickedButton.AbsolutePosition
-            local s = clickedButton.AbsoluteSize
-            local camera = workspace.CurrentCamera
-            local viewport = camera and camera.ViewportSize or Vector2.new(800, 600)
-            local width, height = 210, 225
-            local x = p.X + s.X - width
-            local y = p.Y + s.Y + 5
-
-            if x < 5 then x = 5 end
-            if x + width > viewport.X - 5 then x = viewport.X - width - 5 end
-            if y + height > viewport.Y - 5 then y = p.Y - height - 5 end
-            if y < 5 then y = 5 end
-
-            picker.Position = UDim2.fromOffset(x, y)
+            PlacePopup(picker, clickedButton)
             picker.Visible = true
             self.ActiveColorPicker = picker
             self.ActiveColorButton = clickedButton
@@ -425,7 +435,7 @@ function NovaUI:AddPage(name, icon)
             Corner(popup, 6)
             Stroke(popup)
 
-            colorButton._NovaPicker = popup
+            self.ColorPickers[colorButton] = popup
             table.insert(self.ColorButtons, colorButton)
 
             New("TextLabel", {
@@ -847,7 +857,7 @@ print("hello world")
 local ExampleWindow = NovaUI.new("NovaUI Example")
 local ExamplePage = ExampleWindow:AddPage("Main", "M")
 ExamplePage:AddTitle("NovaUI Test")
-ExamplePage:AddLabel("[FIX] COLORPICKER GUI HIT TEST")
+ExamplePage:AddLabel("[FIX] COLORPICKER MAPPING")
 ExamplePage:AddToggle("Test Toggle", false, function(state) print("Toggle:", state) end, {colorpicker = true, keybind = true})
 ExamplePage:AddButton("Test Button", function() print("Button clicked") end)
 ExamplePage:AddSlider("Slider", 0, 100, 50, function(value) print("Slider:", value) end)
