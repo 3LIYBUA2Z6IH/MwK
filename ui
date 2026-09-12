@@ -17,23 +17,12 @@ for _, gui in ipairs(Player:WaitForChild("PlayerGui"):GetChildren()) do
 end
 
 local C = {
-    Background = Color3.fromRGB(13, 13, 15),
-    Sidebar = Color3.fromRGB(16, 16, 19),
-    Top = Color3.fromRGB(19, 19, 22),
-    Element = Color3.fromRGB(21, 21, 25),
-    ElementHover = Color3.fromRGB(27, 27, 32),
-    Border = Color3.fromRGB(34, 34, 39),
-    Text = Color3.fromRGB(225, 225, 230),
-    SubText = Color3.fromRGB(135, 135, 142),
-    Accent = Color3.fromRGB(235, 92, 96),
-    Accent2 = Color3.fromRGB(180, 55, 60),
+    Background = Color3.fromRGB(13, 13, 15), Sidebar = Color3.fromRGB(16, 16, 19), Top = Color3.fromRGB(19, 19, 22), Element = Color3.fromRGB(21, 21, 25), ElementHover = Color3.fromRGB(27, 27, 32), Border = Color3.fromRGB(34, 34, 39), Text = Color3.fromRGB(225, 225, 230), SubText = Color3.fromRGB(135, 135, 142), Accent = Color3.fromRGB(235, 92, 96), Accent2 = Color3.fromRGB(180, 55, 60),
 }
 
 local function New(class, props)
     local obj = Instance.new(class)
-    for i, v in pairs(props or {}) do
-        obj[i] = v
-    end
+    for i, v in pairs(props or {}) do obj[i] = v end
     return obj
 end
 
@@ -55,138 +44,58 @@ function NovaUI.new(title)
     self.Pages = {}
     self.CurrentPage = nil
 
-    self.Gui = New("ScreenGui", {
-        Name = "NovaUI_290H",
-        ResetOnSpawn = false,
-        DisplayOrder = 9999,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        Parent = Player:WaitForChild("PlayerGui")
-    })
+    self.Gui = New("ScreenGui", {Name = "NovaUI_500H", ResetOnSpawn = false, DisplayOrder = 9999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = Player:WaitForChild("PlayerGui")})
 
-    self.Main = New("Frame", {
-        Parent = self.Gui,
-        Size = UDim2.fromOffset(220, 290),
-        Position = UDim2.new(0.5, -110, 0.5, -145),
-        BackgroundColor3 = C.Background,
-        BorderSizePixel = 0
-    })
+    self.Main = New("Frame", {Parent = self.Gui, Size = UDim2.fromOffset(220, 500), Position = UDim2.new(0.5, -110, 0.5, -250), BackgroundColor3 = C.Background, BorderSizePixel = 0})
     Corner(self.Main, 5)
     Stroke(self.Main)
 
-    self.Top = New("Frame", {
-        Parent = self.Main,
-        Size = UDim2.new(1, 0, 0, 30),
-        BackgroundColor3 = C.Top,
-        BorderSizePixel = 0
-    })
+    self.Top = New("Frame", {Parent = self.Main, Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = C.Top, BorderSizePixel = 0})
 
-    New("TextLabel", {
-        Parent = self.Top,
-        Size = UDim2.new(1, -45, 1, 0),
-        Position = UDim2.fromOffset(10, 0),
-        BackgroundTransparency = 1,
-        Text = title or "Nova",
-        TextColor3 = C.Text,
-        TextSize = 11,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Left
-    })
+    New("TextLabel", {Parent = self.Top, Size = UDim2.new(1, -45, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = title or "Nova", TextColor3 = C.Text, TextSize = 11, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left})
 
-    local close = New("TextButton", {
-        Parent = self.Top,
-        Size = UDim2.fromOffset(25, 24),
-        Position = UDim2.new(1, -29, 0, 3),
-        BackgroundTransparency = 1,
-        Text = "×",
-        TextColor3 = C.SubText,
-        TextSize = 16,
-        Font = Enum.Font.GothamMedium,
-        AutoButtonColor = false
-    })
+    local close = New("TextButton", {Parent = self.Top, Size = UDim2.fromOffset(25, 24), Position = UDim2.new(1, -29, 0, 3), BackgroundTransparency = 1, Text = "×", TextColor3 = C.SubText, TextSize = 16, Font = Enum.Font.GothamMedium, AutoButtonColor = false})
+    close.MouseEnter:Connect(function() close.TextColor3 = Color3.fromRGB(255, 80, 80) end)
+    close.MouseLeave:Connect(function() close.TextColor3 = C.SubText end)
+    close.MouseButton1Click:Connect(function() self.Gui.Enabled = false end)
 
-    close.MouseEnter:Connect(function()
-        close.TextColor3 = Color3.fromRGB(255, 80, 80)
-    end)
-    close.MouseLeave:Connect(function()
-        close.TextColor3 = C.SubText
-    end)
-    close.MouseButton1Click:Connect(function()
-        self.Gui.Enabled = false
-    end)
-
-    self.Sidebar = New("Frame", {
-        Parent = self.Main,
-        Size = UDim2.new(0, 35, 1, -30),
-        Position = UDim2.fromOffset(0, 30),
-        BackgroundColor3 = C.Sidebar,
-        BorderSizePixel = 0
-    })
-
-    New("UIListLayout", {
-        Parent = self.Sidebar,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        HorizontalAlignment = Enum.HorizontalAlignment.Center,
-        Padding = UDim.new(0, 4)
-    })
-
+    self.Sidebar = New("Frame", {Parent = self.Main, Size = UDim2.new(0, 35, 1, -30), Position = UDim2.fromOffset(0, 30), BackgroundColor3 = C.Sidebar, BorderSizePixel = 0})
+    New("UIListLayout", {Parent = self.Sidebar, SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 4)})
     local sidePadding = Instance.new("UIPadding")
     sidePadding.PaddingTop = UDim.new(0, 7)
     sidePadding.Parent = self.Sidebar
 
-    self.Content = New("Frame", {
-        Parent = self.Main,
-        Size = UDim2.new(1, -35, 1, -30),
-        Position = UDim2.fromOffset(35, 30),
-        BackgroundColor3 = C.Background,
-        BorderSizePixel = 0
-    })
+    self.Content = New("Frame", {Parent = self.Main, Size = UDim2.new(1, -35, 1, -30), Position = UDim2.fromOffset(35, 30), BackgroundColor3 = C.Background, BorderSizePixel = 0})
 
     local dragging = false
     local dragStart
     local startPos
-
     self.Top.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
             startPos = self.Main.Position
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
-
     UIS.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            self.Main.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
+            self.Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
-
     return self
 end
 
 function NovaUI:SelectPage(page)
     for _, p in ipairs(self.Pages) do
         p.Frame.Visible = false
-        TweenService:Create(p.Button, TweenInfo.new(0.12), {
-            BackgroundColor3 = C.Sidebar,
-            TextColor3 = C.SubText
-        }):Play()
+        TweenService:Create(p.Button, TweenInfo.new(0.12), {BackgroundColor3 = C.Sidebar, TextColor3 = C.SubText}):Play()
     end
-
     page.Frame.Visible = true
-    TweenService:Create(page.Button, TweenInfo.new(0.12), {
-        BackgroundColor3 = C.Accent2,
-        TextColor3 = Color3.fromRGB(255, 255, 255)
-    }):Play()
+    TweenService:Create(page.Button, TweenInfo.new(0.12), {BackgroundColor3 = C.Accent2, TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
     self.CurrentPage = page
 end
 
@@ -194,183 +103,57 @@ function NovaUI:AddPage(name, icon)
     local page = {}
     page.Name = name
     page.Icon = icon or string.sub(name, 1, 1)
-
-    page.Frame = New("ScrollingFrame", {
-        Parent = self.Content,
-        Size = UDim2.fromScale(1, 1),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ScrollBarThickness = 1,
-        ScrollBarImageColor3 = C.Border,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        Visible = false
-    })
-
+    page.Frame = New("ScrollingFrame", {Parent = self.Content, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 1, ScrollBarImageColor3 = C.Border, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y, Visible = false})
     local padding = Instance.new("UIPadding")
     padding.PaddingTop = UDim.new(0, 6)
     padding.PaddingBottom = UDim.new(0, 5)
     padding.PaddingLeft = UDim.new(0, 7)
     padding.PaddingRight = UDim.new(0, 7)
     padding.Parent = page.Frame
+    New("UIListLayout", {Parent = page.Frame, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 3)})
 
-    New("UIListLayout", {
-        Parent = page.Frame,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 3)
-    })
-
-    page.Button = New("TextButton", {
-        Parent = self.Sidebar,
-        Size = UDim2.fromOffset(28, 28),
-        BackgroundColor3 = C.Sidebar,
-        BorderSizePixel = 0,
-        Text = page.Icon,
-        TextColor3 = C.SubText,
-        TextSize = 10,
-        Font = Enum.Font.GothamBold,
-        AutoButtonColor = false
-    })
+    page.Button = New("TextButton", {Parent = self.Sidebar, Size = UDim2.fromOffset(28, 28), BackgroundColor3 = C.Sidebar, BorderSizePixel = 0, Text = page.Icon, TextColor3 = C.SubText, TextSize = 10, Font = Enum.Font.GothamBold, AutoButtonColor = false})
     Corner(page.Button, 4)
-
-    page.Button.MouseButton1Click:Connect(function()
-        self:SelectPage(page)
-    end)
-
+    page.Button.MouseButton1Click:Connect(function() self:SelectPage(page) end)
     table.insert(self.Pages, page)
-    if not self.CurrentPage then
-        self:SelectPage(page)
-    end
+    if not self.CurrentPage then self:SelectPage(page) end
 
     function page:AddTitle(text)
-        return New("TextLabel", {
-            Parent = page.Frame,
-            Size = UDim2.new(1, 0, 0, 19),
-            BackgroundTransparency = 1,
-            Text = text,
-            TextColor3 = C.Text,
-            TextSize = 12,
-            Font = Enum.Font.GothamBold,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
+        return New("TextLabel", {Parent = page.Frame, Size = UDim2.new(1, 0, 0, 19), BackgroundTransparency = 1, Text = text, TextColor3 = C.Text, TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left})
     end
-
     function page:AddLabel(text)
-        return New("TextLabel", {
-            Parent = page.Frame,
-            Size = UDim2.new(1, 0, 0, 20),
-            BackgroundTransparency = 1,
-            Text = text,
-            TextColor3 = C.SubText,
-            TextSize = 9,
-            Font = Enum.Font.GothamMedium,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
+        return New("TextLabel", {Parent = page.Frame, Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = text, TextColor3 = C.SubText, TextSize = 9, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left})
     end
-
     function page:AddToggle(text, default, callback, options)
         options = options or {}
-
         local enabled = default or false
         local bindEnabled = options.keybind == true
         local currentKey = nil
         local recording = false
-
-        local holder = New("Frame", {
-            Parent = page.Frame,
-            Size = UDim2.new(1, 0, 0, 25),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0
-        })
-
-        local function updateToggle()
-            if callback then
-                callback(enabled)
-            end
-        end
-
-        local label = New("TextLabel", {
-            Parent = holder,
-            Size = UDim2.new(0, 110, 1, 0),
-            Position = UDim2.fromOffset(0, 0),
-            BackgroundTransparency = 1,
-            Text = text,
-            TextColor3 = enabled and C.Text or C.SubText,
-            TextSize = 12,
-            Font = Enum.Font.GothamMedium,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextYAlignment = Enum.TextYAlignment.Center,
-            ZIndex = 2
-        })
-
-        local toggleButton = New("TextButton", {
-            Parent = holder,
-            Size = UDim2.fromOffset(18, 18),
-            Position = UDim2.new(1, -18, 0.5, -9),
-            BackgroundColor3 = C.Element,
-            BorderSizePixel = 0,
-            Text = "",
-            AutoButtonColor = false,
-            ZIndex = 8
-        })
+        local holder = New("Frame", {Parent = page.Frame, Size = UDim2.new(1, 0, 0, 25), BackgroundTransparency = 1, BorderSizePixel = 0})
+        local function updateToggle() if callback then callback(enabled) end end
+        local label = New("TextLabel", {Parent = holder, Size = UDim2.new(0, 110, 1, 0), Position = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = enabled and C.Text or C.SubText, TextSize = 12, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center, ZIndex = 2})
+        local toggleButton = New("TextButton", {Parent = holder, Size = UDim2.fromOffset(18, 18), Position = UDim2.new(1, -18, 0.5, -9), BackgroundColor3 = C.Element, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 8})
         Corner(toggleButton, 4)
-
-        local redSquare = New("Frame", {
-            Parent = toggleButton,
-            BackgroundColor3 = C.Accent,
-            Position = UDim2.new(0.5, 0, 0.5, 0),
-            Size = enabled and UDim2.fromOffset(12, 12) or UDim2.fromOffset(0, 0),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            ZIndex = 9
-        })
+        local redSquare = New("Frame", {Parent = toggleButton, BackgroundColor3 = C.Accent, Position = UDim2.new(0.5, 0, 0.5, 0), Size = enabled and UDim2.fromOffset(12, 12) or UDim2.fromOffset(0, 0), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 9})
         Corner(redSquare, 2)
-
         local function refreshToggle()
-            TweenService:Create(redSquare, TweenInfo.new(0.15), {
-                Size = enabled and UDim2.fromOffset(12, 12) or UDim2.fromOffset(0, 0)
-            }):Play()
-            TweenService:Create(label, TweenInfo.new(0.15), {
-                TextColor3 = enabled and C.Text or C.SubText
-            }):Play()
+            TweenService:Create(redSquare, TweenInfo.new(0.15), {Size = enabled and UDim2.fromOffset(12, 12) or UDim2.fromOffset(0, 0)}):Play()
+            TweenService:Create(label, TweenInfo.new(0.15), {TextColor3 = enabled and C.Text or C.SubText}):Play()
             updateToggle()
         end
-
-        toggleButton.MouseButton1Click:Connect(function()
-            enabled = not enabled
-            refreshToggle()
-        end)
-
+        toggleButton.MouseButton1Click:Connect(function() enabled = not enabled refreshToggle() end)
         if bindEnabled then
-            local bindButton = New("TextButton", {
-                Parent = holder,
-                Size = UDim2.fromOffset(30, 18),
-                Position = UDim2.new(1, -68, 0.5, -9),
-                BackgroundColor3 = C.Element,
-                BorderSizePixel = 0,
-                Text = "None",
-                TextColor3 = C.SubText,
-                TextSize = 8,
-                Font = Enum.Font.GothamMedium,
-                AutoButtonColor = false,
-                TextTruncate = Enum.TextTruncate.AtEnd,
-                ZIndex = 10
-            })
-
+            local bindButton = New("TextButton", {Parent = holder, Size = UDim2.fromOffset(30, 18), Position = UDim2.new(1, -68, 0.5, -9), BackgroundColor3 = C.Element, BorderSizePixel = 0, Text = "None", TextColor3 = C.SubText, TextSize = 8, Font = Enum.Font.GothamMedium, AutoButtonColor = false, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 10})
             Corner(bindButton, 4)
             Stroke(bindButton)
-
             bindButton.MouseButton1Click:Connect(function()
-                if recording then
-                    return
-                end
-
+                if recording then return end
                 recording = true
                 bindButton.Text = "Press key..."
                 bindButton.TextSize = 7
-                bindButton.TextTruncate = Enum.TextTruncate.AtEnd
                 bindButton.TextColor3 = C.Text
             end)
-
             UIS.InputBegan:Connect(function(input, gameProcessed)
                 if recording then
                     if input.KeyCode == Enum.KeyCode.Backspace then
@@ -381,222 +164,88 @@ function NovaUI:AddPage(name, icon)
                         recording = false
                         return
                     end
-
                     if input.UserInputType == Enum.UserInputType.Keyboard then
                         currentKey = input.KeyCode
                         bindButton.Text = currentKey.Name
                         bindButton.TextSize = 8
-                        bindButton.TextTruncate = Enum.TextTruncate.AtEnd
                         bindButton.TextColor3 = C.Text
                         recording = false
                     end
                     return
                 end
-
                 if not gameProcessed and currentKey and input.KeyCode == currentKey then
                     enabled = not enabled
                     refreshToggle()
                 end
             end)
         end
-
-        return {
-            Set = function(_, state)
-                enabled = state
-                refreshToggle()
-            end,
-            Get = function()
-                return enabled
-            end,
-            GetKey = function()
-                return currentKey
-            end
-        }
+        return {Set = function(_, state) enabled = state refreshToggle() end, Get = function() return enabled end, GetKey = function() return currentKey end}
     end
 
     function page:AddButton(text, callback)
-        local button = New("TextButton", {
-            Parent = page.Frame,
-            Size = UDim2.new(1, 0, 0, 25),
-            BackgroundColor3 = C.Element,
-            BorderSizePixel = 0,
-            Text = text,
-            TextColor3 = C.Text,
-            TextSize = 10,
-            Font = Enum.Font.GothamMedium,
-            AutoButtonColor = false
-        })
+        local button = New("TextButton", {Parent = page.Frame, Size = UDim2.new(1, 0, 0, 25), BackgroundColor3 = C.Element, BorderSizePixel = 0, Text = text, TextColor3 = C.Text, TextSize = 10, Font = Enum.Font.GothamMedium, AutoButtonColor = false})
         Corner(button, 4)
-        button.MouseEnter:Connect(function()
-            button.BackgroundColor3 = C.ElementHover
-        end)
-        button.MouseLeave:Connect(function()
-            button.BackgroundColor3 = C.Element
-        end)
-        button.MouseButton1Click:Connect(function()
-            if callback then
-                callback()
-            end
-        end)
+        button.MouseEnter:Connect(function() button.BackgroundColor3 = C.ElementHover end)
+        button.MouseLeave:Connect(function() button.BackgroundColor3 = C.Element end)
+        button.MouseButton1Click:Connect(function() if callback then callback() end end)
         return button
     end
 
     function page:AddSlider(text, min, max, default, callback)
         local value = math.clamp(default or min, min, max)
-
-        local holder = New("Frame", {
-            Parent = page.Frame,
-            BackgroundTransparency = 1,
-            Size = UDim2.new(1, 0, 0, 25)
-        })
-
-        local leftContainer = New("Frame", {
-            Parent = holder,
-            BackgroundTransparency = 1,
-            Size = UDim2.new(0.35, 0, 1, 0)
-        })
-
-        local nameLabel = New("TextLabel", {
-            Parent = leftContainer,
-            BackgroundTransparency = 1,
-            Size = UDim2.new(0.60, 0, 1, 0),
-            Font = Enum.Font.GothamMedium,
-            Text = text,
-            TextColor3 = C.Text,
-            TextSize = 10,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextYAlignment = Enum.TextYAlignment.Center
-        })
-
-        local valueBox = New("TextBox", {
-            Parent = leftContainer,
-            BackgroundColor3 = C.Element,
-            Position = UDim2.new(0.60, 4, 0.5, -7),
-            Size = UDim2.fromOffset(22, 14),
-            Font = Enum.Font.Gotham,
-            Text = tostring(value),
-            TextColor3 = C.SubText,
-            TextSize = 7,
-            TextXAlignment = Enum.TextXAlignment.Center,
-            TextYAlignment = Enum.TextYAlignment.Center,
-            ClearTextOnFocus = false,
-            TextEditable = true
-        })
+        local holder = New("Frame", {Parent = page.Frame, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 25)})
+        local leftContainer = New("Frame", {Parent = holder, BackgroundTransparency = 1, Size = UDim2.new(0.35, 0, 1, 0)})
+        local nameLabel = New("TextLabel", {Parent = leftContainer, BackgroundTransparency = 1, Size = UDim2.new(0.60, 0, 1, 0), Font = Enum.Font.GothamMedium, Text = text, TextColor3 = C.Text, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center})
+        local valueBox = New("TextBox", {Parent = leftContainer, BackgroundColor3 = C.Element, Position = UDim2.new(0.60, 4, 0.5, -7), Size = UDim2.fromOffset(22, 14), Font = Enum.Font.Gotham, Text = tostring(value), TextColor3 = C.SubText, TextSize = 7, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center, ClearTextOnFocus = false, TextEditable = true})
         Corner(valueBox, 3)
         Stroke(valueBox)
-
-        local bg = New("Frame", {
-            Parent = holder,
-            BackgroundColor3 = Color3.fromRGB(38, 38, 43),
-            Position = UDim2.new(0.35, 10, 0.5, -3),
-            Size = UDim2.new(0.65, -57, 0, 6)
-        })
+        local bg = New("Frame", {Parent = holder, BackgroundColor3 = Color3.fromRGB(38, 38, 43), Position = UDim2.new(0.35, 10, 0.5, -3), Size = UDim2.new(0.65, -57, 0, 6)})
         Corner(bg, 6)
-
         local initialPos = (value - min) / (max - min)
-        local fill = New("Frame", {
-            Parent = bg,
-            BackgroundColor3 = C.Accent,
-            Size = UDim2.new(initialPos, 0, 1, 0)
-        })
+        local fill = New("Frame", {Parent = bg, BackgroundColor3 = C.Accent, Size = UDim2.new(initialPos, 0, 1, 0)})
         Corner(fill, 6)
-
-        local handle = New("Frame", {
-            Parent = fill,
-            BackgroundColor3 = C.Accent,
-            Position = UDim2.new(1, 0, 0.5, 0),
-            Size = UDim2.fromOffset(10, 10),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            ZIndex = 3
-        })
+        local handle = New("Frame", {Parent = fill, BackgroundColor3 = C.Accent, Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(10, 10), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 3})
         Corner(handle, 10)
-
         local handleStroke = Instance.new("UIStroke")
         handleStroke.Color = C.Sidebar
         handleStroke.Thickness = 2
         handleStroke.Parent = handle
-
         local isDragging = false
-
         local function setValue(newValue, fireCallback)
             newValue = tonumber(newValue)
-            if not newValue then
-                valueBox.Text = tostring(value)
-                return
-            end
-
+            if not newValue then valueBox.Text = tostring(value) return end
             value = math.clamp(newValue, min, max)
-            if (max - min <= 10) or (min % 1 ~= 0) or (max % 1 ~= 0) then
-                value = math.floor(value * 10 + 0.5) / 10
-            else
-                value = math.floor(value + 0.5)
-            end
-
+            if (max - min <= 10) or (min % 1 ~= 0) or (max % 1 ~= 0) then value = math.floor(value * 10 + 0.5) / 10 else value = math.floor(value + 0.5) end
             local pos = (value - min) / (max - min)
             valueBox.Text = tostring(value)
             fill.Size = UDim2.new(pos, 0, 1, 0)
-
-            if fireCallback and callback then
-                callback(value)
-            end
+            if fireCallback and callback then callback(value) end
         end
-
         local function updateSlide(input)
-            if not isDragging then
-                return
-            end
-
+            if not isDragging then return end
             local mousePos = input.Position
             local bgAbsolutePos = bg.AbsolutePosition
             local bgAbsoluteSize = bg.AbsoluteSize
-            local pos = math.clamp(
-                (mousePos.X - bgAbsolutePos.X) / bgAbsoluteSize.X,
-                0,
-                1
-            )
-
+            local pos = math.clamp((mousePos.X - bgAbsolutePos.X) / bgAbsoluteSize.X, 0, 1)
             setValue(min + (pos * (max - min)), true)
         end
-
-        valueBox.FocusLost:Connect(function()
-            setValue(valueBox.Text, true)
-        end)
-
+        valueBox.FocusLost:Connect(function() setValue(valueBox.Text, true) end)
         bg.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 isDragging = true
-                TweenService:Create(handle, TweenInfo.new(0.12), {
-                    Size = UDim2.fromOffset(12, 12)
-                }):Play()
+                TweenService:Create(handle, TweenInfo.new(0.12), {Size = UDim2.fromOffset(12, 12)}):Play()
                 updateSlide(input)
             end
         end)
-
-        UIS.InputChanged:Connect(function(input)
-            if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                updateSlide(input)
-            end
-        end)
-
+        UIS.InputChanged:Connect(function(input) if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlide(input) end end)
         UIS.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 and isDragging then
                 isDragging = false
-                TweenService:Create(handle, TweenInfo.new(0.12), {
-                    Size = UDim2.fromOffset(10, 10)
-                }):Play()
+                TweenService:Create(handle, TweenInfo.new(0.12), {Size = UDim2.fromOffset(10, 10)}):Play()
             end
         end)
-
-        return {
-            Set = function(_, newValue)
-                setValue(newValue, false)
-            end,
-            Get = function()
-                return value
-            end
-        }
+        return {Set = function(_, newValue) setValue(newValue, false) end, Get = function() return value end}
     end
-
     return page
 end
 
@@ -605,25 +254,11 @@ function NovaUI:Toggle()
 end
 
 print("hello world")
-
 local ExampleWindow = NovaUI.new("NovaUI Example")
 local ExamplePage = ExampleWindow:AddPage("Main", "M")
-
 ExamplePage:AddTitle("NovaUI Test")
-ExamplePage:AddLabel("220 x 290")
-
-ExamplePage:AddToggle("Test Toggle", false, function(state)
-    print("Toggle:", state)
-end, {
-    keybind = true
-})
-
-ExamplePage:AddButton("Test Button", function()
-    print("Button clicked")
-end)
-
-ExamplePage:AddSlider("Slider", 0, 100, 50, function(value)
-    print("Slider:", value)
-end)
-
+ExamplePage:AddLabel("220 x 500")
+ExamplePage:AddToggle("Test Toggle", false, function(state) print("Toggle:", state) end, {keybind = true})
+ExamplePage:AddButton("Test Button", function() print("Button clicked") end)
+ExamplePage:AddSlider("Slider", 0, 100, 50, function(value) print("Slider:", value) end)
 return NovaUI
