@@ -3,8 +3,8 @@
 
 -- ColorPicker fix: the picker is now opened by the color button itself,
 -- using the same MouseButton1Click pattern as the Toggle button.
--- The picker is placed in a separate ScreenGui so it cannot be hidden
--- behind or clipped by the main UI.
+-- The picker uses the main ScreenGui with a high ZIndex instead of a
+-- second ScreenGui, avoiding nil Enabled-state errors.
 
 local NovaUI = {}
 NovaUI.__index = NovaUI
@@ -107,15 +107,6 @@ function NovaUI.new(title)
         Parent = PlayerGui
     })
 
-    self.ColorGui = New("ScreenGui", {
-        Name = "NovaUI_ColorPicker",
-        ResetOnSpawn = false,
-        DisplayOrder = 100001,
-        IgnoreGuiInset = true,
-        ZIndexBehavior = Enum.ZIndexBehavior.Global,
-        Parent = PlayerGui
-    })
-
     self.Main = New("Frame", {
         Parent = self.Gui,
         Size = UDim2.fromOffset(220, 300),
@@ -162,7 +153,9 @@ function NovaUI.new(title)
     })
     close.MouseButton1Click:Connect(function()
         self.Gui.Enabled = false
-        self.ColorGui.Enabled = false
+        if self.ActiveColorPicker then
+            self.ActiveColorPicker.Visible = false
+        end
         self.ActiveColorPicker = nil
         self.ActiveColorButton = nil
     end)
@@ -440,7 +433,7 @@ function NovaUI:AddPage(name, icon)
             Stroke(colorButton)
 
             popup = New("Frame", {
-                Parent = self.ColorGui,
+                Parent = self.Gui,
                 Size = UDim2.fromOffset(210, 225),
                 BackgroundColor3 = C.Top,
                 BorderSizePixel = 0,
@@ -673,7 +666,6 @@ function NovaUI:AddPage(name, icon)
                 self.ActiveColorPicker = popup
                 PlacePopup(colorButton, popup)
                 popup.Visible = true
-                self.ColorGui.Enabled = true
             end)
 
             applyColor()
@@ -914,8 +906,10 @@ end
 
 function NovaUI:Toggle()
     self.Gui.Enabled = not self.Gui.Enabled
-    self.ColorGui.Enabled = self.Gui.Enabled
     if not self.Gui.Enabled then
+        if self.ActiveColorPicker then
+            self.ActiveColorPicker.Visible = false
+        end
         self.ActiveColorPicker = nil
         self.ActiveColorButton = nil
     end
