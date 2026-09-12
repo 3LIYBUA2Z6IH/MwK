@@ -1,6 +1,11 @@
 --// NovaUI Compact
 --// Roblox UI Library
 
+-- ColorPicker fix: the picker is now opened by the color button itself,
+-- using the same MouseButton1Click pattern as the Toggle button.
+-- The picker is placed in a separate ScreenGui so it cannot be hidden
+-- behind or clipped by the main UI.
+
 local NovaUI = {}
 NovaUI.__index = NovaUI
 
@@ -64,8 +69,8 @@ local function PlacePopup(button, popup)
     local s = button.AbsoluteSize
     local camera = workspace.CurrentCamera
     local viewport = camera and camera.ViewportSize or Vector2.new(800, 600)
-    local width = popup.AbsoluteSize.X > 0 and popup.AbsoluteSize.X or 210
-    local height = popup.AbsoluteSize.Y > 0 and popup.AbsoluteSize.Y or 225
+    local width = popup.Size.X.Offset
+    local height = popup.Size.Y.Offset
 
     local px = p.X + s.X - width
     local py = p.Y + s.Y + 5
@@ -97,6 +102,15 @@ function NovaUI.new(title)
         Name = "NovaUI_300H",
         ResetOnSpawn = false,
         DisplayOrder = 100000,
+        IgnoreGuiInset = true,
+        ZIndexBehavior = Enum.ZIndexBehavior.Global,
+        Parent = PlayerGui
+    })
+
+    self.ColorGui = New("ScreenGui", {
+        Name = "NovaUI_ColorPicker",
+        ResetOnSpawn = false,
+        DisplayOrder = 100001,
         IgnoreGuiInset = true,
         ZIndexBehavior = Enum.ZIndexBehavior.Global,
         Parent = PlayerGui
@@ -148,6 +162,7 @@ function NovaUI.new(title)
     })
     close.MouseButton1Click:Connect(function()
         self.Gui.Enabled = false
+        self.ColorGui.Enabled = false
         self.ActiveColorPicker = nil
         self.ActiveColorButton = nil
     end)
@@ -425,7 +440,7 @@ function NovaUI:AddPage(name, icon)
             Stroke(colorButton)
 
             popup = New("Frame", {
-                Parent = self.Gui,
+                Parent = self.ColorGui,
                 Size = UDim2.fromOffset(210, 225),
                 BackgroundColor3 = C.Top,
                 BorderSizePixel = 0,
@@ -642,7 +657,6 @@ function NovaUI:AddPage(name, icon)
                 end
             end)
 
-            -- Open and close the picker directly from the color button.
             colorButton.MouseButton1Click:Connect(function()
                 if self.ActiveColorPicker and self.ActiveColorPicker ~= popup then
                     self.ActiveColorPicker.Visible = false
@@ -659,6 +673,7 @@ function NovaUI:AddPage(name, icon)
                 self.ActiveColorPicker = popup
                 PlacePopup(colorButton, popup)
                 popup.Visible = true
+                self.ColorGui.Enabled = true
             end)
 
             applyColor()
@@ -899,6 +914,7 @@ end
 
 function NovaUI:Toggle()
     self.Gui.Enabled = not self.Gui.Enabled
+    self.ColorGui.Enabled = self.Gui.Enabled
     if not self.Gui.Enabled then
         self.ActiveColorPicker = nil
         self.ActiveColorButton = nil
@@ -909,7 +925,7 @@ print("hello world")
 local ExampleWindow = NovaUI.new("NovaUI Example")
 local ExamplePage = ExampleWindow:AddPage("Main", "M")
 ExamplePage:AddTitle("NovaUI Test")
-ExamplePage:AddLabel("[FIX] COLORPICKER MOUSE INPUT")
+ExamplePage:AddLabel("[FIX] COLORPICKER WINDOW")
 ExamplePage:AddToggle("Test Toggle", false, function(state) print("Toggle:", state) end, {colorpicker = true, keybind = true})
 ExamplePage:AddButton("Test Button", function() print("Button clicked") end)
 ExamplePage:AddSlider("Slider", 0, 100, 50, function(value) print("Slider:", value) end)
