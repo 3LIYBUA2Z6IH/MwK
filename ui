@@ -43,6 +43,8 @@ function NovaUI.new(title)
     local self = setmetatable({}, NovaUI)
     self.Pages = {}
     self.CurrentPage = nil
+    self.ActiveColorPicker = nil
+    self.ActiveColorButton = nil
 
     self.Gui = New("ScreenGui", {Name = "NovaUI_300H", ResetOnSpawn = false, DisplayOrder = 9999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Parent = Player:WaitForChild("PlayerGui")})
 
@@ -85,6 +87,32 @@ function NovaUI.new(title)
             self.Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
+
+    UIS.InputBegan:Connect(function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+        local popup = self.ActiveColorPicker
+        if not popup or not popup.Visible then return end
+
+        local mouse = input.Position
+        local popupPos = popup.AbsolutePosition
+        local popupSize = popup.AbsoluteSize
+        local insidePopup = mouse.X >= popupPos.X and mouse.X <= popupPos.X + popupSize.X and mouse.Y >= popupPos.Y and mouse.Y <= popupPos.Y + popupSize.Y
+
+        local colorButton = self.ActiveColorButton
+        local insideButton = false
+        if colorButton and colorButton.Parent then
+            local buttonPos = colorButton.AbsolutePosition
+            local buttonSize = colorButton.AbsoluteSize
+            insideButton = mouse.X >= buttonPos.X and mouse.X <= buttonPos.X + buttonSize.X and mouse.Y >= buttonPos.Y and mouse.Y <= buttonPos.Y + buttonSize.Y
+        end
+
+        if not insidePopup and not insideButton then
+            popup.Visible = false
+            self.ActiveColorPicker = nil
+            self.ActiveColorButton = nil
+        end
+    end)
+
     return self
 end
 
@@ -163,31 +191,120 @@ function NovaUI:AddPage(name, icon)
             Corner(colorButton, 4)
             Stroke(colorButton)
 
-            local popup = New("Frame", {Parent = holder, Size = UDim2.fromOffset(128, 78), Position = UDim2.new(1, -132, 1, 3), BackgroundColor3 = C.Top, BorderSizePixel = 0, Visible = false, ZIndex = 20})
-            Corner(popup, 5)
+            local popup = New("Frame", {Parent = self.Gui, Size = UDim2.fromOffset(190, 190), BackgroundColor3 = C.Top, BorderSizePixel = 0, Visible = false, ZIndex = 100})
+            Corner(popup, 6)
             Stroke(popup)
 
-            local palette = {
-                Color3.fromRGB(235, 92, 96), Color3.fromRGB(255, 140, 80), Color3.fromRGB(245, 210, 70), Color3.fromRGB(95, 210, 120),
-                Color3.fromRGB(70, 180, 255), Color3.fromRGB(110, 100, 245), Color3.fromRGB(205, 100, 255), Color3.fromRGB(240, 240, 240),
-                Color3.fromRGB(80, 80, 88), Color3.fromRGB(20, 20, 24), Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 80, 150)
-            }
+            New("TextLabel", {Parent = popup, Size = UDim2.new(1, -16, 0, 20), Position = UDim2.fromOffset(8, 5), BackgroundTransparency = 1, Text = "Color", TextColor3 = C.Text, TextSize = 10, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 101})
+            local preview = New("Frame", {Parent = popup, Size = UDim2.fromOffset(38, 22), Position = UDim2.new(1, -46, 0, 4), BackgroundColor3 = currentColor, BorderSizePixel = 0, ZIndex = 101})
+            Corner(preview, 4)
+            Stroke(preview)
 
-            New("UIGridLayout", {Parent = popup, CellSize = UDim2.fromOffset(18, 18), CellPadding = UDim2.fromOffset(4, 4), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder})
-            for _, color in ipairs(palette) do
-                local swatch = New("TextButton", {Parent = popup, Size = UDim2.fromOffset(18, 18), BackgroundColor3 = color, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 21})
-                Corner(swatch, 4)
-                swatch.MouseButton1Click:Connect(function()
-                    currentColor = color
-                    colorButton.BackgroundColor3 = currentColor
-                    redSquare.BackgroundColor3 = currentColor
-                    popup.Visible = false
+            local r, g, b = math.floor(currentColor.R * 255 + 0.5), math.floor(currentColor.G * 255 + 0.5), math.floor(currentColor.B * 255 + 0.5)
+            local draggingChannel = nil
+            local channelBars = {}
+            local channelFills = {}
+            local channelValues = {}
+
+            local function updateColor()
+                currentColor = Color3.fromRGB(r, g, b)
+                colorButton.BackgroundColor3 = currentColor
+                redSquare.BackgroundColor3 = currentColor
+                preview.BackgroundColor3 = currentColor
+                if channelValues.R then channelValues.R.Text = tostring(r) end
+                if channelValues.G then channelValues.G.Text = tostring(g) end
+                if channelValues.B then channelValues.B.Text = tostring(b) end
+                for key, _ in pairs(channelBars) do
+                    local channel = key == "R" and r or key == "G" and g or b
+                    channelFills[key].Size = UDim2.new(channel / 255, 0, 1, 0)
+                end
+            end
+
+            local function setChannel(name, input)
+                local bar = channelBars[name]
+                if not bar then return end
+                local x = math.clamp(input.Position.X - bar.AbsolutePosition.X, 0, bar.AbsoluteSize.X)
+                local channel = math.floor((x / math.max(bar.AbsoluteSize.X, 1)) * 255 + 0.5)
+                if name == "R" then r = channel elseif name == "G" then g = channel else b = channel end
+                updateColor()
+            end
+
+            local function addChannel(name, y)
+                New("TextLabel", {Parent = popup, Size = UDim2.fromOffset(15, 20), Position = UDim2.fromOffset(8, y - 3), BackgroundTransparency = 1, Text = name, TextColor3 = C.SubText, TextSize = 9, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 101})
+                local bar = New("Frame", {Parent = popup, Size = UDim2.fromOffset(130, 6), Position = UDim2.fromOffset(28, y + 4), BackgroundColor3 = C.Element, BorderSizePixel = 0, ZIndex = 101})
+                Corner(bar, 4)
+                local fill = New("Frame", {Parent = bar, Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = name == "R" and Color3.fromRGB(255, 75, 75) or name == "G" and Color3.fromRGB(75, 255, 110) or Color3.fromRGB(75, 130, 255), BorderSizePixel = 0, ZIndex = 102})
+                Corner(fill, 4)
+                local valueLabel = New("TextLabel", {Parent = popup, Size = UDim2.fromOffset(28, 18), Position = UDim2.fromOffset(158, y - 2), BackgroundTransparency = 1, TextColor3 = C.SubText, TextSize = 8, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 101})
+                channelBars[name] = bar
+                channelFills[name] = fill
+                channelValues[name] = valueLabel
+                bar.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        draggingChannel = name
+                        setChannel(name, input)
+                    end
                 end)
             end
 
-            colorButton.MouseButton1Click:Connect(function()
-                popup.Visible = not popup.Visible
+            addChannel("R", 40)
+            addChannel("G", 72)
+            addChannel("B", 104)
+
+            local hexBox = New("TextLabel", {Parent = popup, Size = UDim2.fromOffset(100, 18), Position = UDim2.fromOffset(8, 137), BackgroundColor3 = C.Element, TextColor3 = C.SubText, TextSize = 8, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center, ZIndex = 101})
+            Corner(hexBox, 4)
+            Stroke(hexBox)
+
+            local function updateHex()
+                hexBox.Text = string.format("#%02X%02X%02X", r, g, b)
+            end
+
+            local oldUpdateColor = updateColor
+            updateColor = function()
+                oldUpdateColor()
+                updateHex()
+            end
+
+            UIS.InputChanged:Connect(function(input)
+                if draggingChannel and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    setChannel(draggingChannel, input)
+                end
             end)
+
+            UIS.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingChannel = nil
+                end
+            end)
+
+            colorButton.MouseButton1Click:Connect(function()
+                if popup.Visible then
+                    popup.Visible = false
+                    self.ActiveColorPicker = nil
+                    self.ActiveColorButton = nil
+                    return
+                end
+
+                if self.ActiveColorPicker and self.ActiveColorPicker ~= popup then
+                    self.ActiveColorPicker.Visible = false
+                end
+
+                local buttonPos = colorButton.AbsolutePosition
+                local buttonSize = colorButton.AbsoluteSize
+                local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(800, 600)
+                local x = buttonPos.X + buttonSize.X - 190
+                local y = buttonPos.Y + buttonSize.Y + 5
+                if x < 5 then x = 5 end
+                if x + 190 > viewport.X - 5 then x = viewport.X - 195 end
+                if y + 190 > viewport.Y - 5 then y = buttonPos.Y - 195 end
+                popup.Position = UDim2.fromOffset(x, y)
+                popup.Visible = true
+                self.ActiveColorPicker = popup
+                self.ActiveColorButton = colorButton
+                updateColor()
+            end)
+
+            updateColor()
         end
 
         if bindEnabled then
@@ -245,6 +362,7 @@ function NovaUI:AddPage(name, icon)
                 if typeof(color) ~= "Color3" then return end
                 currentColor = color
                 redSquare.BackgroundColor3 = color
+                if colorEnabled then colorButton.BackgroundColor3 = color end
             end,
             GetColor = function()
                 return currentColor
@@ -327,7 +445,7 @@ print("hello world")
 local ExampleWindow = NovaUI.new("NovaUI Example")
 local ExamplePage = ExampleWindow:AddPage("Main", "M")
 ExamplePage:AddTitle("NovaUI Test")
-ExamplePage:AddLabel("[UPDATE MARKER] Toggle supports COLORPICKER/KEYBIND true or false")
+ExamplePage:AddLabel("[UPDATE MARKER] RGB Colorpicker | outside click closes")
 ExamplePage:AddToggle("Test Toggle", false, function(state) print("Toggle:", state) end, {colorpicker = true, keybind = true})
 ExamplePage:AddButton("Test Button", function() print("Button clicked") end)
 ExamplePage:AddSlider("Slider", 0, 100, 50, function(value) print("Slider:", value) end)
