@@ -316,12 +316,10 @@ function NovaUI:AddPage(name, icon)
     })
 
     local padding = Instance.new("UIPadding")
-
-PaddingTop = UDim.new(0, 6)
-PaddingBottom = UDim.new(0, 5)
-PaddingLeft = UDim.new(0, 7)
-PaddingRight = UDim.new(0, 7)
-
+    padding.PaddingTop = UDim.new(0, 6)
+    padding.PaddingBottom = UDim.new(0, 5)
+    padding.PaddingLeft = UDim.new(0, 7)
+    padding.PaddingRight = UDim.new(0, 7)
     padding.Parent = page.Frame
 
     local layout = New("UIListLayout", {
@@ -437,7 +435,7 @@ PaddingRight = UDim.new(0, 7)
 
             Parent = page.Frame,
 
-            Size = UDim2.new(1, 0, 0, 25),
+            Size = UDim2.new(1, 0, 0, 22),
 
             BackgroundColor3 = C.Element,
             BorderSizePixel = 0
@@ -455,12 +453,12 @@ PaddingRight = UDim.new(0, 7)
 
             Size = UDim2.new(
                 1,
-                bindEnabled and -78 or -45,
+                bindEnabled and -68 or -39,
                 1,
                 0
             ),
 
-            Position = UDim2.fromOffset(9, 0),
+            Position = UDim2.fromOffset(7, 0),
 
             BackgroundTransparency = 1,
 
@@ -482,13 +480,13 @@ PaddingRight = UDim.new(0, 7)
 
             Parent = holder,
 
-            Size = UDim2.fromOffset(25, 14),
+            Size = UDim2.fromOffset(22, 12),
 
             Position = UDim2.new(
                 1,
-                bindEnabled and -34 or -32,
+                -28,
                 0.5,
-                -7
+                -6
             ),
 
             BackgroundColor3 = Color3.fromRGB(35,35,40),
@@ -506,7 +504,7 @@ PaddingRight = UDim.new(0, 7)
 
             Parent = toggle,
 
-            Size = UDim2.fromOffset(8, 8),
+            Size = UDim2.fromOffset(7, 7),
 
             Position = UDim2.fromOffset(2, 2),
 
@@ -537,7 +535,7 @@ PaddingRight = UDim.new(0, 7)
                     knob,
                     TweenInfo.new(0.12),
                     {
-                        Position = UDim2.fromOffset(12, 2),
+                        Position = UDim2.fromOffset(13, 2),
                         BackgroundColor3 =
                             Color3.fromRGB(255,255,255)
                     }
@@ -591,13 +589,13 @@ PaddingRight = UDim.new(0, 7)
 
                 Parent = holder,
 
-                Size = UDim2.fromOffset(32, 18),
+                Size = UDim2.fromOffset(28, 16),
 
                 Position = UDim2.new(
                     1,
-                    -72,
+                    -60,
                     0.5,
-                    -9
+                    -8
                 ),
 
                 BackgroundColor3 = C.Background,
@@ -780,15 +778,15 @@ PaddingRight = UDim.new(0, 7)
     -- SLIDER
     ------------------------------------------------
 
-function page:AddSlider(text, min, max, default, callback)
+    function page:AddSlider(text, min, max, default, callback)
 
-        local value = default or min
+        local value = math.clamp(default or min, min, max)
 
         local holder = New("Frame", {
 
             Parent = page.Frame,
 
-            Size = UDim2.new(1, 0, 0, 46),
+            Size = UDim2.new(1, 0, 0, 38),
 
             BackgroundColor3 = C.Element,
 
@@ -805,9 +803,9 @@ function page:AddSlider(text, min, max, default, callback)
 
             Parent = holder,
 
-            Size = UDim2.new(1, -55, 0, 19),
+            Size = UDim2.new(1, -55, 0, 16),
 
-            Position = UDim2.fromOffset(9, 3),
+            Position = UDim2.fromOffset(7, 2),
 
             BackgroundTransparency = 1,
 
@@ -822,18 +820,19 @@ function page:AddSlider(text, min, max, default, callback)
         })
 
         ------------------------------------------------
-        -- VALUE
+        -- VALUE INPUT
         ------------------------------------------------
 
-        local valueLabel = New("TextLabel", {
+        local valueBox = New("TextBox", {
 
             Parent = holder,
 
-            Size = UDim2.fromOffset(40, 19),
+            Size = UDim2.fromOffset(40, 16),
 
-            Position = UDim2.new(1, -48, 0, 3),
+            Position = UDim2.new(1, -47, 0, 2),
 
-            BackgroundTransparency = 1,
+            BackgroundColor3 = C.Background,
+            BorderSizePixel = 0,
 
             Text = tostring(value),
 
@@ -842,8 +841,13 @@ function page:AddSlider(text, min, max, default, callback)
 
             Font = Enum.Font.GothamMedium,
 
+            ClearTextOnFocus = false,
+            TextEditable = true,
             TextXAlignment = Enum.TextXAlignment.Right
         })
+
+        Corner(valueBox, 3)
+        Stroke(valueBox)
 
         ------------------------------------------------
         -- BAR
@@ -853,9 +857,9 @@ function page:AddSlider(text, min, max, default, callback)
 
             Parent = holder,
 
-            Size = UDim2.new(1, -18, 0, 3),
+            Size = UDim2.new(1, -14, 0, 3),
 
-            Position = UDim2.fromOffset(9, 32),
+            Position = UDim2.fromOffset(7, 27),
 
             BackgroundColor3 =
                 Color3.fromRGB(38,38,43),
@@ -914,6 +918,52 @@ function page:AddSlider(text, min, max, default, callback)
         Corner(knob, 8)
 
         ------------------------------------------------
+        -- SLIDER UPDATE
+        ------------------------------------------------
+
+        local function setValue(newValue, fireCallback)
+
+            newValue = tonumber(newValue)
+
+            if not newValue then
+                valueBox.Text = tostring(value)
+                return
+            end
+
+            value = math.clamp(math.floor(newValue), min, max)
+
+            local p =
+                (value - min) /
+                (max - min)
+
+            valueBox.Text = tostring(value)
+
+            fill.Size =
+                UDim2.new(p, 0, 1, 0)
+
+            knob.Position =
+                UDim2.new(
+                    p,
+                    0,
+                    0.5,
+                    0
+                )
+
+            if fireCallback and callback then
+                callback(value)
+            end
+
+        end
+
+        ------------------------------------------------
+        -- MANUAL VALUE EDIT
+        ------------------------------------------------
+
+        valueBox.FocusLost:Connect(function()
+            setValue(valueBox.Text, true)
+        end)
+
+        ------------------------------------------------
         -- SLIDER INPUT
         ------------------------------------------------
 
@@ -932,26 +982,10 @@ function page:AddSlider(text, min, max, default, callback)
                 1
             )
 
-            value = math.floor(
+            local newValue =
                 min + ((max - min) * percent)
-            )
 
-            valueLabel.Text = tostring(value)
-
-            fill.Size =
-                UDim2.new(percent, 0, 1, 0)
-
-            knob.Position =
-                UDim2.new(
-                    percent,
-                    0,
-                    0.5,
-                    0
-                )
-
-            if callback then
-                callback(value)
-            end
+            setValue(newValue, true)
 
         end
 
@@ -993,27 +1027,7 @@ function page:AddSlider(text, min, max, default, callback)
         return {
 
             Set = function(_, newValue)
-
-                value =
-                    math.clamp(newValue, min, max)
-
-                local p =
-                    (value - min) /
-                    (max - min)
-
-                valueLabel.Text = tostring(value)
-
-                fill.Size =
-                    UDim2.new(p, 0, 1, 0)
-
-                knob.Position =
-                    UDim2.new(
-                        p,
-                        0,
-                        0.5,
-                        0
-                    )
-
+                setValue(newValue, false)
             end,
 
             Get = function()
@@ -1049,7 +1063,9 @@ ExamplePage:AddLabel("If you see this UI, the library loaded successfully.")
 
 ExamplePage:AddToggle("Test Toggle", false, function(state)
     print("Toggle:", state)
-end)
+end, {
+    keybind = true
+})
 
 ExamplePage:AddButton("Test Button", function()
     print("Button clicked")
