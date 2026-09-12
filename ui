@@ -391,7 +391,8 @@ function NovaUI:AddPage(name, icon)
             BackgroundColor3 = C.Element,
             Position = UDim2.new(1, -18, 0.5, 0),
             Size = UDim2.fromOffset(18, 18),
-            AnchorPoint = Vector2.new(1, 0.5)
+            AnchorPoint = Vector2.new(1, 0.5),
+            ZIndex = 6
         })
 
         Corner(box, 4)
@@ -401,7 +402,8 @@ function NovaUI:AddPage(name, icon)
             BackgroundColor3 = C.Accent,
             Position = UDim2.new(0.5, 0, 0.5, 0),
             Size = enabled and UDim2.fromOffset(12, 12) or UDim2.fromOffset(0, 0),
-            AnchorPoint = Vector2.new(0.5, 0.5)
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            ZIndex = 7
         })
 
         Corner(redSquare, 2)
@@ -438,7 +440,8 @@ function NovaUI:AddPage(name, icon)
                 TextColor3 = C.SubText,
                 TextSize = 8,
                 Font = Enum.Font.GothamMedium,
-                AutoButtonColor = false
+                AutoButtonColor = false,
+                ZIndex = 6
             })
 
             Corner(bindButton, 4)
@@ -451,7 +454,7 @@ function NovaUI:AddPage(name, icon)
                 end
 
                 recording = true
-                bindButton.Text = "..."
+                bindButton.Text = "Press key..."
                 bindButton.TextColor3 = C.Text
 
             end)
@@ -494,10 +497,10 @@ function NovaUI:AddPage(name, icon)
         local btn = New("TextButton", {
             Parent = holder,
             BackgroundTransparency = 1,
-            Size = UDim2.new(1, 0, 1, 0),
+            Size = bindEnabled and UDim2.new(1, -42, 1, 0) or UDim2.new(1, 0, 1, 0),
             Text = "",
             AutoButtonColor = false,
-            ZIndex = 5
+            ZIndex = 2
         })
 
         btn.MouseButton1Click:Connect(function()
