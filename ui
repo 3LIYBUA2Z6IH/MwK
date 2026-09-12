@@ -187,7 +187,7 @@ function NovaUI.new(title)
 
     ------------------------------------------------
     -- CONTENT
-    ----------------------------------------------------
+    ------------------------------------------------
 
     self.Content = New("Frame", {
         Parent = self.Main,
@@ -636,37 +636,22 @@ function NovaUI:AddPage(name, icon)
                     return
                 end
 
-                ----------------------------------------
-                -- RECORD KEY
-                ----------------------------------------
-
                 if recording then
 
                     if input.KeyCode == Enum.KeyCode.Backspace then
 
                         currentKey = nil
-
                         bindButton.Text = "None"
-
-                        bindButton.TextColor3 =
-                            C.SubText
-
+                        bindButton.TextColor3 = C.SubText
                         recording = false
-
                         return
                     end
 
-                    if input.UserInputType ==
-                        Enum.UserInputType.Keyboard then
+                    if input.UserInputType == Enum.UserInputType.Keyboard then
 
                         currentKey = input.KeyCode
-
-                        bindButton.Text =
-                            currentKey.Name
-
-                        bindButton.TextColor3 =
-                            C.Text
-
+                        bindButton.Text = currentKey.Name
+                        bindButton.TextColor3 = C.Text
                         recording = false
 
                     end
@@ -674,15 +659,9 @@ function NovaUI:AddPage(name, icon)
                     return
                 end
 
-                ----------------------------------------
-                -- ACTIVATE KEYBIND
-                ----------------------------------------
-
-                if currentKey
-                    and input.KeyCode == currentKey then
+                if currentKey and input.KeyCode == currentKey then
 
                     enabled = not enabled
-
                     updateToggle()
 
                 end
@@ -691,29 +670,19 @@ function NovaUI:AddPage(name, icon)
 
         end
 
-        ------------------------------------------------
-        -- RETURN
-        ------------------------------------------------
-
         return {
 
             Set = function(_, state)
-
                 enabled = state
                 updateToggle()
-
             end,
 
             Get = function()
-
                 return enabled
-
             end,
 
             GetKey = function()
-
                 return currentKey
-
             end
 
         }
@@ -749,25 +718,17 @@ function NovaUI:AddPage(name, icon)
         Corner(button, 4)
 
         button.MouseEnter:Connect(function()
-
-            button.BackgroundColor3 =
-                C.ElementHover
-
+            button.BackgroundColor3 = C.ElementHover
         end)
 
         button.MouseLeave:Connect(function()
-
-            button.BackgroundColor3 =
-                C.Element
-
+            button.BackgroundColor3 = C.Element
         end)
 
         button.MouseButton1Click:Connect(function()
-
             if callback then
                 callback()
             end
-
         end)
 
         return button
@@ -807,36 +768,13 @@ function NovaUI:AddPage(name, icon)
         })
 
         ------------------------------------------------
-        -- VALUE INPUT
-        ------------------------------------------------
-
-        local valueBox = New("TextBox", {
-            Parent = holder,
-            Size = UDim2.fromOffset(34, 16),
-            Position = UDim2.new(1, -34, 0.5, -8),
-            BackgroundColor3 = C.Background,
-            BorderSizePixel = 0,
-            Text = tostring(value),
-            TextColor3 = C.SubText,
-            TextSize = 8,
-            Font = Enum.Font.GothamMedium,
-            ClearTextOnFocus = false,
-            TextEditable = true,
-            TextXAlignment = Enum.TextXAlignment.Center,
-            TextYAlignment = Enum.TextYAlignment.Center
-        })
-
-        Corner(valueBox, 3)
-        Stroke(valueBox)
-
-        ------------------------------------------------
         -- BAR
         ------------------------------------------------
 
         local bar = New("Frame", {
             Parent = holder,
-            Size = UDim2.new(1, -89, 0, 3),
-            Position = UDim2.fromOffset(49, 8),
+            Size = UDim2.fromOffset(105, 3),
+            Position = UDim2.fromOffset(50, 8),
             BackgroundColor3 = Color3.fromRGB(38,38,43),
             BorderSizePixel = 0
         })
@@ -875,6 +813,29 @@ function NovaUI:AddPage(name, icon)
         Corner(knob, 8)
 
         ------------------------------------------------
+        -- VALUE INPUT
+        ------------------------------------------------
+
+        local valueBox = New("TextBox", {
+            Parent = holder,
+            Size = UDim2.fromOffset(34, 16),
+            Position = UDim2.fromOffset(161, 2),
+            BackgroundColor3 = C.Background,
+            BorderSizePixel = 0,
+            Text = tostring(value),
+            TextColor3 = C.SubText,
+            TextSize = 8,
+            Font = Enum.Font.GothamMedium,
+            ClearTextOnFocus = false,
+            TextEditable = true,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextYAlignment = Enum.TextYAlignment.Center
+        })
+
+        Corner(valueBox, 3)
+        Stroke(valueBox)
+
+        ------------------------------------------------
         -- SET VALUE
         ------------------------------------------------
 
@@ -900,10 +861,6 @@ function NovaUI:AddPage(name, icon)
             end
 
         end
-
-        ------------------------------------------------
-        -- MANUAL VALUE EDIT
-        ------------------------------------------------
 
         valueBox.FocusLost:Connect(function()
             setValue(valueBox.Text, true)
