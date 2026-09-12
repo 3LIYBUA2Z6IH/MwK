@@ -1820,4 +1820,5 @@ function NovaUI:Toggle()
 
 end
 
+print("hello world")
 return NovaUI
