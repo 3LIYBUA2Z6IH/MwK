@@ -1,0 +1,32 @@
+name: Modify ui
+on:
+  push:
+    paths:
+      - '.github/workflows/modify-ui.yml'
+jobs:
+  modify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Append print before return
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('ui')
+          s = p.read_text()
+          marker = '\nreturn NovaUI\n'
+          if 'print("hello world")' not in s and marker in s:
+              s = s.replace(marker, '\nprint("hello world")\nreturn NovaUI\n', 1)
+              p.write_text(s)
+          PY
+      - name: Commit changes
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ui
+          git diff --cached --quiet || git commit -m 'test: add hello world print to ui'
+          git push
