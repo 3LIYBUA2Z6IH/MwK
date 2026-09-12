@@ -83,13 +83,8 @@ function NovaUI.new(title)
 
     self.Main = New("Frame", {
         Parent = self.Gui,
-
         Size = UDim2.fromOffset(360, 240),
-        Position = UDim2.new(
-            0.5, -180,
-            0.5, -120
-        ),
-
+        Position = UDim2.new(0.5, -180, 0.5, -120),
         BackgroundColor3 = C.Background,
         BorderSizePixel = 0
     })
@@ -277,10 +272,6 @@ function NovaUI:AddPage(name, icon)
     page.Name = name
     page.Icon = icon or string.sub(name, 1, 1)
 
-    ------------------------------------------------
-    -- FRAME
-    ------------------------------------------------
-
     page.Frame = New("ScrollingFrame", {
         Parent = self.Content,
         Size = UDim2.fromScale(1, 1),
@@ -306,10 +297,6 @@ function NovaUI:AddPage(name, icon)
         Padding = UDim.new(0, 3)
     })
 
-    ------------------------------------------------
-    -- PAGE BUTTON
-    ------------------------------------------------
-
     page.Button = New("TextButton", {
         Parent = self.Sidebar,
         Size = UDim2.fromOffset(28, 28),
@@ -334,10 +321,6 @@ function NovaUI:AddPage(name, icon)
         self:SelectPage(page)
     end
 
-    ------------------------------------------------
-    -- TITLE
-    ------------------------------------------------
-
     function page:AddTitle(text)
 
         local obj = New("TextLabel", {
@@ -353,10 +336,6 @@ function NovaUI:AddPage(name, icon)
 
         return obj
     end
-
-    ------------------------------------------------
-    -- LABEL
-    ------------------------------------------------
 
     function page:AddLabel(text)
 
@@ -394,12 +373,10 @@ function NovaUI:AddPage(name, icon)
             BorderSizePixel = 0
         })
 
-        local labelWidth = bindEnabled and 0.70 or 0.80
-
         local label = New("TextLabel", {
             Parent = holder,
-            Size = UDim2.new(labelWidth, 0, 1, 0),
-            Position = UDim2.new(0, 0, 0, 0),
+            Size = UDim2.new(bindEnabled and 0.57 or 0.78, 0, 1, 0),
+            Position = UDim2.fromOffset(0, 0),
             BackgroundTransparency = 1,
             Text = text,
             TextColor3 = enabled and C.Text or C.SubText,
@@ -429,14 +406,32 @@ function NovaUI:AddPage(name, icon)
 
         Corner(redSquare, 2)
 
+        local updateToggle
+
+        local function runToggle()
+            TweenService:Create(redSquare, TweenInfo.new(0.15), {
+                Size = enabled and UDim2.fromOffset(12, 12) or UDim2.fromOffset(0, 0)
+            }):Play()
+
+            TweenService:Create(label, TweenInfo.new(0.15), {
+                TextColor3 = enabled and C.Text or C.SubText
+            }):Play()
+
+            if callback then
+                callback(enabled)
+            end
+        end
+
+        updateToggle = runToggle
+
         local bindButton
 
         if bindEnabled then
 
             bindButton = New("TextButton", {
                 Parent = holder,
-                Size = UDim2.fromOffset(34, 18),
-                Position = UDim2.new(1, -24, 0.5, -9),
+                Size = UDim2.fromOffset(32, 18),
+                Position = UDim2.new(1, -60, 0.5, -9),
                 BackgroundColor3 = C.Element,
                 BorderSizePixel = 0,
                 Text = "None",
@@ -448,7 +443,6 @@ function NovaUI:AddPage(name, icon)
 
             Corner(bindButton, 4)
             Stroke(bindButton)
-            box.Position = UDim2.new(1, 0, 0.5, 0)
 
             bindButton.MouseButton1Click:Connect(function()
 
@@ -495,8 +489,6 @@ function NovaUI:AddPage(name, icon)
 
             end)
 
-            label.Size = UDim2.new(0.58, 0, 1, 0)
-            bindButton.Position = UDim2.new(1, -46, 0.5, -9)
         end
 
         local btn = New("TextButton", {
@@ -507,21 +499,6 @@ function NovaUI:AddPage(name, icon)
             AutoButtonColor = false,
             ZIndex = 5
         })
-
-        local function updateToggle()
-
-            TweenService:Create(redSquare, TweenInfo.new(0.15), {
-                Size = enabled and UDim2.fromOffset(12, 12) or UDim2.fromOffset(0, 0)
-            }):Play()
-
-            TweenService:Create(label, TweenInfo.new(0.15), {
-                TextColor3 = enabled and C.Text or C.SubText
-            }):Play()
-
-            if callback then
-                callback(enabled)
-            end
-        end
 
         btn.MouseButton1Click:Connect(function()
             enabled = not enabled
@@ -604,7 +581,7 @@ function NovaUI:AddPage(name, icon)
             Name = "ItemName",
             Parent = leftContainer,
             BackgroundTransparency = 1,
-            Size = UDim2.new(0.58, 0, 1, 0),
+            Size = UDim2.new(0.60, 0, 1, 0),
             Font = Enum.Font.GothamMedium,
             Text = text,
             TextColor3 = C.Text,
@@ -616,19 +593,19 @@ function NovaUI:AddPage(name, icon)
         local valueBox = New("TextBox", {
             Parent = leftContainer,
             BackgroundColor3 = C.Element,
-            Position = UDim2.new(0.58, 0, 0.5, -9),
-            Size = UDim2.new(0.42, -2, 0, 18),
+            Position = UDim2.new(0.60, 3, 0.5, -8),
+            Size = UDim2.fromOffset(28, 16),
             Font = Enum.Font.Gotham,
             Text = tostring(value),
             TextColor3 = C.SubText,
-            TextSize = 9,
-            TextXAlignment = Enum.TextXAlignment.Right,
+            TextSize = 8,
+            TextXAlignment = Enum.TextXAlignment.Center,
             TextYAlignment = Enum.TextYAlignment.Center,
             ClearTextOnFocus = false,
             TextEditable = true
         })
 
-        Corner(valueBox, 4)
+        Corner(valueBox, 3)
         Stroke(valueBox)
 
         local bg = New("Frame", {
