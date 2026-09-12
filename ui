@@ -1,11 +1,6 @@
 --// NovaUI Compact
 --// Roblox UI Library
 
--- ColorPicker fix: the picker is now opened by the color button itself,
--- using the same MouseButton1Click pattern as the Toggle button.
--- The picker uses the main ScreenGui with a high ZIndex instead of a
--- second ScreenGui, avoiding nil Enabled-state errors.
-
 local NovaUI = {}
 NovaUI.__index = NovaUI
 
@@ -55,40 +50,35 @@ local function Stroke(obj)
     s.Parent = obj
 end
 
-local function Inside(obj, x, y)
-    if not obj or not obj.Parent or not obj.Visible then
-        return false
-    end
-    local p = obj.AbsolutePosition
-    local s = obj.AbsoluteSize
-    return x >= p.X and x <= p.X + s.X and y >= p.Y and y <= p.Y + s.Y
+local function Clamp01(v)
+    return math.clamp(v, 0, 1)
 end
 
 local function PlacePopup(button, popup)
-    local p = button.AbsolutePosition
-    local s = button.AbsoluteSize
     local camera = workspace.CurrentCamera
     local viewport = camera and camera.ViewportSize or Vector2.new(800, 600)
+    local p = button.AbsolutePosition
+    local s = button.AbsoluteSize
     local width = popup.Size.X.Offset
     local height = popup.Size.Y.Offset
 
-    local px = p.X + s.X - width
-    local py = p.Y + s.Y + 5
+    local x = p.X + s.X - width
+    local y = p.Y + s.Y + 5
 
-    if px < 5 then
-        px = 5
-    end
-    if px + width > viewport.X - 5 then
-        px = viewport.X - width - 5
-    end
-    if py + height > viewport.Y - 5 then
-        py = p.Y - height - 5
-    end
-    if py < 5 then
-        py = 5
-    end
+    if x < 5 then x = 5 end
+    if x + width > viewport.X - 5 then x = viewport.X - width - 5 end
+    if y + height > viewport.Y - 5 then y = p.Y - height - 5 end
+    if y < 5 then y = 5 end
 
-    popup.Position = UDim2.fromOffset(px, py)
+    popup.Position = UDim2.fromOffset(x, y)
+end
+
+local function ClosePicker(self)
+    if self.ActiveColorPicker then
+        self.ActiveColorPicker.Visible = false
+    end
+    self.ActiveColorPicker = nil
+    self.ActiveColorButton = nil
 end
 
 function NovaUI.new(title)
@@ -99,10 +89,19 @@ function NovaUI.new(title)
     self.ActiveColorButton = nil
 
     self.Gui = New("ScreenGui", {
-        Name = "NovaUI_300H",
+        Name = "NovaUI_Main",
         ResetOnSpawn = false,
-        DisplayOrder = 100000,
         IgnoreGuiInset = true,
+        DisplayOrder = 100000,
+        ZIndexBehavior = Enum.ZIndexBehavior.Global,
+        Parent = PlayerGui
+    })
+
+    self.ColorGui = New("ScreenGui", {
+        Name = "NovaUI_ColorPicker",
+        ResetOnSpawn = false,
+        IgnoreGuiInset = true,
+        DisplayOrder = 100001,
         ZIndexBehavior = Enum.ZIndexBehavior.Global,
         Parent = PlayerGui
     })
@@ -151,13 +150,10 @@ function NovaUI.new(title)
         AutoButtonColor = false,
         ZIndex = 12
     })
+
     close.MouseButton1Click:Connect(function()
         self.Gui.Enabled = false
-        if self.ActiveColorPicker then
-            self.ActiveColorPicker.Visible = false
-        end
-        self.ActiveColorPicker = nil
-        self.ActiveColorButton = nil
+        ClosePicker(self)
     end)
 
     self.Sidebar = New("Frame", {
@@ -221,30 +217,6 @@ function NovaUI.new(title)
         end
     end)
 
-    UIS.InputBegan:Connect(function(input)
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
-            return
-        end
-        if not self.Gui.Enabled then
-            return
-        end
-
-        local popup = self.ActiveColorPicker
-        local button = self.ActiveColorButton
-        if not popup or not popup.Visible then
-            return
-        end
-
-        local x, y = input.Position.X, input.Position.Y
-        if Inside(popup, x, y) or Inside(button, x, y) then
-            return
-        end
-
-        popup.Visible = false
-        self.ActiveColorPicker = nil
-        self.ActiveColorButton = nil
-    end)
-
     return self
 end
 
@@ -305,7 +277,9 @@ function NovaUI:AddPage(name, icon)
         ZIndex = 12
     })
     Corner(page.Button, 4)
+
     page.Button.MouseButton1Click:Connect(function()
+        ClosePicker(self)
         self:SelectPage(page)
     end)
 
@@ -411,8 +385,8 @@ function NovaUI:AddPage(name, icon)
             refreshToggle()
         end)
 
-        local popup
         local colorButton
+        local popup
         local hue, sat, val
         local applyColor
 
@@ -433,8 +407,8 @@ function NovaUI:AddPage(name, icon)
             Stroke(colorButton)
 
             popup = New("Frame", {
-                Parent = self.Gui,
-                Size = UDim2.fromOffset(210, 225),
+                Parent = self.ColorGui,
+                Size = UDim2.fromOffset(230, 245),
                 BackgroundColor3 = C.Top,
                 BorderSizePixel = 0,
                 Visible = false,
@@ -444,23 +418,47 @@ function NovaUI:AddPage(name, icon)
             Corner(popup, 6)
             Stroke(popup)
 
-            New("TextLabel", {
+            local header = New("Frame", {
                 Parent = popup,
-                Size = UDim2.new(1, -16, 0, 20),
-                Position = UDim2.fromOffset(8, 5),
+                Size = UDim2.new(1, 0, 0, 30),
                 BackgroundTransparency = 1,
-                Text = "Color",
-                TextColor3 = C.Text,
-                TextSize = 10,
-                Font = Enum.Font.GothamBold,
-                TextXAlignment = Enum.TextXAlignment.Left,
                 ZIndex = 1001
             })
 
+            New("TextLabel", {
+                Parent = header,
+                Size = UDim2.new(1, -40, 1, 0),
+                Position = UDim2.fromOffset(10, 0),
+                BackgroundTransparency = 1,
+                Text = "Color Picker",
+                TextColor3 = C.Text,
+                TextSize = 11,
+                Font = Enum.Font.GothamBold,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 1002
+            })
+
+            local closePicker = New("TextButton", {
+                Parent = header,
+                Size = UDim2.fromOffset(25, 24),
+                Position = UDim2.new(1, -29, 0, 3),
+                BackgroundTransparency = 1,
+                Text = "×",
+                TextColor3 = C.SubText,
+                TextSize = 15,
+                Font = Enum.Font.GothamMedium,
+                AutoButtonColor = false,
+                ZIndex = 1002
+            })
+
+            closePicker.MouseButton1Click:Connect(function()
+                ClosePicker(self)
+            end)
+
             local preview = New("Frame", {
                 Parent = popup,
-                Size = UDim2.fromOffset(42, 22),
-                Position = UDim2.new(1, -50, 0, 4),
+                Size = UDim2.fromOffset(48, 24),
+                Position = UDim2.new(1, -60, 0, 3),
                 BackgroundColor3 = currentColor,
                 BorderSizePixel = 0,
                 ZIndex = 1001
@@ -470,43 +468,46 @@ function NovaUI:AddPage(name, icon)
 
             hue, sat, val = currentColor:ToHSV()
 
-            local svSquare = New("Frame", {
+            local svButton = New("TextButton", {
                 Parent = popup,
-                Size = UDim2.fromOffset(170, 125),
-                Position = UDim2.fromOffset(10, 31),
+                Size = UDim2.fromOffset(185, 135),
+                Position = UDim2.fromOffset(10, 36),
                 BackgroundColor3 = Color3.fromHSV(hue, 1, 1),
                 BorderSizePixel = 0,
+                Text = "",
+                AutoButtonColor = false,
+                Active = true,
                 ZIndex = 1000
             })
-            Corner(svSquare, 5)
-            Stroke(svSquare)
+            Corner(svButton, 5)
+            Stroke(svButton)
 
-            local whiteLayer = New("Frame", {
-                Parent = svSquare,
+            local white = New("Frame", {
+                Parent = svButton,
                 Size = UDim2.fromScale(1, 1),
                 BackgroundColor3 = Color3.new(1, 1, 1),
                 BorderSizePixel = 0,
                 ZIndex = 1001
             })
-            Corner(whiteLayer, 5)
+            Corner(white, 5)
             New("UIGradient", {
-                Parent = whiteLayer,
+                Parent = white,
                 Transparency = NumberSequence.new({
                     NumberSequenceKeypoint.new(0, 0),
                     NumberSequenceKeypoint.new(1, 1)
                 })
             })
 
-            local blackLayer = New("Frame", {
-                Parent = svSquare,
+            local black = New("Frame", {
+                Parent = svButton,
                 Size = UDim2.fromScale(1, 1),
                 BackgroundColor3 = Color3.new(0, 0, 0),
                 BorderSizePixel = 0,
                 ZIndex = 1002
             })
-            Corner(blackLayer, 5)
+            Corner(black, 5)
             New("UIGradient", {
-                Parent = blackLayer,
+                Parent = black,
                 Rotation = 90,
                 Transparency = NumberSequence.new({
                     NumberSequenceKeypoint.new(0, 1),
@@ -515,7 +516,7 @@ function NovaUI:AddPage(name, icon)
             })
 
             local svCursor = New("Frame", {
-                Parent = svSquare,
+                Parent = svButton,
                 Size = UDim2.fromOffset(10, 10),
                 Position = UDim2.new(sat, 0, 1 - val, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
@@ -526,19 +527,22 @@ function NovaUI:AddPage(name, icon)
             Corner(svCursor, 5)
             Stroke(svCursor)
 
-            local hueBar = New("Frame", {
+            local hueButton = New("TextButton", {
                 Parent = popup,
-                Size = UDim2.fromOffset(14, 125),
-                Position = UDim2.fromOffset(185, 31),
+                Size = UDim2.fromOffset(16, 135),
+                Position = UDim2.fromOffset(202, 36),
                 BackgroundColor3 = Color3.new(1, 1, 1),
                 BorderSizePixel = 0,
+                Text = "",
+                AutoButtonColor = false,
+                Active = true,
                 ZIndex = 1000
             })
-            Corner(hueBar, 6)
-            Stroke(hueBar)
+            Corner(hueButton, 6)
+            Stroke(hueButton)
 
             New("UIGradient", {
-                Parent = hueBar,
+                Parent = hueButton,
                 Rotation = 90,
                 Color = ColorSequence.new({
                     ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
@@ -552,8 +556,8 @@ function NovaUI:AddPage(name, icon)
             })
 
             local hueCursor = New("Frame", {
-                Parent = hueBar,
-                Size = UDim2.fromOffset(18, 4),
+                Parent = hueButton,
+                Size = UDim2.fromOffset(20, 4),
                 Position = UDim2.new(0.5, 0, hue, 0),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundColor3 = Color3.new(1, 1, 1),
@@ -565,10 +569,9 @@ function NovaUI:AddPage(name, icon)
 
             local hexBox = New("TextLabel", {
                 Parent = popup,
-                Size = UDim2.new(1, -20, 0, 20),
-                Position = UDim2.fromOffset(10, 165),
+                Size = UDim2.new(1, -20, 0, 24),
+                Position = UDim2.fromOffset(10, 181),
                 BackgroundColor3 = C.Element,
-                Text = "",
                 TextColor3 = C.SubText,
                 TextSize = 9,
                 Font = Enum.Font.GothamMedium,
@@ -579,15 +582,15 @@ function NovaUI:AddPage(name, icon)
             Corner(hexBox, 4)
             Stroke(hexBox)
 
-            local svDragging = false
-            local hueDragging = false
+            local draggingSV = false
+            local draggingHue = false
 
             applyColor = function()
                 currentColor = Color3.fromHSV(hue, sat, val)
                 colorButton.BackgroundColor3 = currentColor
                 colorSquare.BackgroundColor3 = currentColor
                 preview.BackgroundColor3 = currentColor
-                svSquare.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+                svButton.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
                 svCursor.Position = UDim2.new(sat, 0, 1 - val, 0)
                 hueCursor.Position = UDim2.new(0.5, 0, hue, 0)
                 hexBox.Text = string.format(
@@ -598,36 +601,36 @@ function NovaUI:AddPage(name, icon)
                 )
             end
 
-            local function setSV(input)
-                local size = svSquare.AbsoluteSize
+            local function updateSV(input)
+                local size = svButton.AbsoluteSize
                 if size.X <= 0 or size.Y <= 0 then
                     return
                 end
-                sat = math.clamp((input.Position.X - svSquare.AbsolutePosition.X) / size.X, 0, 1)
-                val = 1 - math.clamp((input.Position.Y - svSquare.AbsolutePosition.Y) / size.Y, 0, 1)
+                sat = Clamp01((input.Position.X - svButton.AbsolutePosition.X) / size.X)
+                val = 1 - Clamp01((input.Position.Y - svButton.AbsolutePosition.Y) / size.Y)
                 applyColor()
             end
 
-            local function setHue(input)
-                local size = hueBar.AbsoluteSize
+            local function updateHue(input)
+                local size = hueButton.AbsoluteSize
                 if size.Y <= 0 then
                     return
                 end
-                hue = math.clamp((input.Position.Y - hueBar.AbsolutePosition.Y) / size.Y, 0, 1)
+                hue = Clamp01((input.Position.Y - hueButton.AbsolutePosition.Y) / size.Y)
                 applyColor()
             end
 
-            svSquare.InputBegan:Connect(function(input)
+            svButton.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    svDragging = true
-                    setSV(input)
+                    draggingSV = true
+                    updateSV(input)
                 end
             end)
 
-            hueBar.InputBegan:Connect(function(input)
+            hueButton.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    hueDragging = true
-                    setHue(input)
+                    draggingHue = true
+                    updateHue(input)
                 end
             end)
 
@@ -635,18 +638,18 @@ function NovaUI:AddPage(name, icon)
                 if input.UserInputType ~= Enum.UserInputType.MouseMovement then
                     return
                 end
-                if svDragging then
-                    setSV(input)
+                if draggingSV then
+                    updateSV(input)
                 end
-                if hueDragging then
-                    setHue(input)
+                if draggingHue then
+                    updateHue(input)
                 end
             end)
 
             UIS.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    svDragging = false
-                    hueDragging = false
+                    draggingSV = false
+                    draggingHue = false
                 end
             end)
 
@@ -656,9 +659,7 @@ function NovaUI:AddPage(name, icon)
                 end
 
                 if popup.Visible then
-                    popup.Visible = false
-                    self.ActiveColorPicker = nil
-                    self.ActiveColorButton = nil
+                    ClosePicker(self)
                     return
                 end
 
@@ -710,6 +711,7 @@ function NovaUI:AddPage(name, icon)
                         recording = false
                         return
                     end
+
                     if input.UserInputType == Enum.UserInputType.Keyboard then
                         currentKey = input.KeyCode
                         bindButton.Text = currentKey.Name
@@ -864,7 +866,7 @@ function NovaUI:AddPage(name, icon)
             if size <= 0 then
                 return
             end
-            local pos = math.clamp((input.Position.X - bg.AbsolutePosition.X) / size, 0, 1)
+            local pos = Clamp01((input.Position.X - bg.AbsolutePosition.X) / size)
             setValue(min + pos * (max - min), true)
         end
 
@@ -907,11 +909,7 @@ end
 function NovaUI:Toggle()
     self.Gui.Enabled = not self.Gui.Enabled
     if not self.Gui.Enabled then
-        if self.ActiveColorPicker then
-            self.ActiveColorPicker.Visible = false
-        end
-        self.ActiveColorPicker = nil
-        self.ActiveColorButton = nil
+        ClosePicker(self)
     end
 end
 
@@ -919,8 +917,18 @@ print("hello world")
 local ExampleWindow = NovaUI.new("NovaUI Example")
 local ExamplePage = ExampleWindow:AddPage("Main", "M")
 ExamplePage:AddTitle("NovaUI Test")
-ExamplePage:AddLabel("[FIX] COLORPICKER WINDOW")
-ExamplePage:AddToggle("Test Toggle", false, function(state) print("Toggle:", state) end, {colorpicker = true, keybind = true})
-ExamplePage:AddButton("Test Button", function() print("Button clicked") end)
-ExamplePage:AddSlider("Slider", 0, 100, 50, function(value) print("Slider:", value) end)
+ExamplePage:AddLabel("ColorPicker uses direct button click")
+ExamplePage:AddToggle("Test Toggle", false, function(state)
+    print("Toggle:", state)
+end, {
+    colorpicker = true,
+    keybind = true
+})
+ExamplePage:AddButton("Test Button", function()
+    print("Button clicked")
+end)
+ExamplePage:AddSlider("Slider", 0, 100, 50, function(value)
+    print("Slider:", value)
+end)
+
 return NovaUI
