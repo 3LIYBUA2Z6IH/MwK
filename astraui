@@ -1,6 +1,5 @@
---// NovaUI Compact
---// Roblox UI Library
-
+-- // NovaUI Compact
+-- // Roblox UI Library
 local NovaUI = {}
 NovaUI.__index = NovaUI
 
@@ -11,6 +10,16 @@ local HttpService = game:GetService("HttpService")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
+-- // Keep NovaUI alive after death/respawn
+local function protectGui(gui)
+    if not gui then return end
+
+    gui.ResetOnSpawn = false
+    gui.Archivable = true
+
+    if gui.Parent ~= PlayerGui then gui.Parent = PlayerGui end
+end
+
 for _, gui in ipairs(PlayerGui:GetChildren()) do
     if gui:IsA("ScreenGui") and gui.Name:sub(1, 6) == "NovaUI" then
         gui:Destroy()
@@ -18,23 +27,21 @@ for _, gui in ipairs(PlayerGui:GetChildren()) do
 end
 
 local C = {
-    Background   = Color3.fromRGB(14, 13, 15),
-    Sidebar      = Color3.fromRGB(23, 20, 23),
-    Top          = Color3.fromRGB(23, 20, 23),
-    Element      = Color3.fromRGB(23, 20, 23),
+    Background = Color3.fromRGB(14, 13, 15),
+    Sidebar = Color3.fromRGB(23, 20, 23),
+    Top = Color3.fromRGB(23, 20, 23),
+    Element = Color3.fromRGB(23, 20, 23),
     ElementHover = Color3.fromRGB(32, 28, 32),
-    Border       = Color3.fromRGB(40, 36, 40),
-    Text         = Color3.fromRGB(240, 235, 238),
-    SubText      = Color3.fromRGB(140, 132, 140),
-    Accent       = Color3.fromRGB(230, 65, 85),
-    Accent2      = Color3.fromRGB(170, 48, 62)
+    Border = Color3.fromRGB(40, 36, 40),
+    Text = Color3.fromRGB(240, 235, 238),
+    SubText = Color3.fromRGB(140, 132, 140),
+    Accent = Color3.fromRGB(230, 65, 85),
+    Accent2 = Color3.fromRGB(170, 48, 62)
 }
 
 local function New(class, props)
     local obj = Instance.new(class)
-    for k, v in pairs(props or {}) do
-        obj[k] = v
-    end
+    for k, v in pairs(props or {}) do obj[k] = v end
     return obj
 end
 
@@ -51,9 +58,7 @@ local function Stroke(obj)
     s.Parent = obj
 end
 
-local function Clamp01(v)
-    return math.clamp(v, 0, 1)
-end
+local function Clamp01(v) return math.clamp(v, 0, 1) end
 
 -- estimasi lebar teks (px) untuk anti-tabrakan: ~px per karakter Gotham
 local function EstTextWidth(text, perChar)
@@ -61,9 +66,7 @@ local function EstTextWidth(text, perChar)
 end
 
 local function ClosePicker(self)
-    if self.ActiveColorPicker then
-        self.ActiveColorPicker.Visible = false
-    end
+    if self.ActiveColorPicker then self.ActiveColorPicker.Visible = false end
     self.ActiveColorPicker = nil
     self.ActiveColorButton = nil
 end
@@ -77,31 +80,34 @@ function NovaUI.new(title)
     self.ActiveColorButton = nil
 
     self.Gui = New("ScreenGui", {
-        Name            = "NovaUI_Main",
-        ResetOnSpawn    = false,
-        IgnoreGuiInset  = true,
-        DisplayOrder    = 100000,
-        ZIndexBehavior  = Enum.ZIndexBehavior.Global,
-        Parent          = PlayerGui
+        Name = "NovaUI_Main",
+        ResetOnSpawn = false,
+        IgnoreGuiInset = true,
+        DisplayOrder = 100000,
+        ZIndexBehavior = Enum.ZIndexBehavior.Global,
+        Parent = PlayerGui
     })
 
     self.ColorGui = New("ScreenGui", {
-        Name           = "NovaUI_ColorPicker",
-        ResetOnSpawn   = false,
+        Name = "NovaUI_ColorPicker",
+        ResetOnSpawn = false,
         IgnoreGuiInset = true,
-        DisplayOrder   = 2147483646,
+        DisplayOrder = 2147483646,
         ZIndexBehavior = Enum.ZIndexBehavior.Global,
-        Enabled        = true,
-        Parent         = PlayerGui
+        Enabled = true,
+        Parent = PlayerGui
     })
 
+    protectGui(self.Gui)
+    protectGui(self.ColorGui)
+
     self.Main = New("Frame", {
-        Parent           = self.Gui,
-        Size             = UDim2.fromOffset(220, 300),
-        Position         = UDim2.new(0.5, -110, 0.5, -150),
+        Parent = self.Gui,
+        Size = UDim2.fromOffset(220, 300),
+        Position = UDim2.new(0.5, -110, 0.5, -150),
         BackgroundColor3 = C.Background,
-        BorderSizePixel  = 0,
-        ZIndex           = 10
+        BorderSizePixel = 0,
+        ZIndex = 10
     })
     Corner(self.Main, 5)
     Stroke(self.Main)
@@ -116,43 +122,44 @@ function NovaUI.new(title)
         local cur = self.Main.Size.X.Offset
         if w > cur then
             local h = self.Main.Size.Y.Offset
-            self.Main.Size     = UDim2.fromOffset(w, h)
-            self.Main.Position = UDim2.new(0.5, -math.floor(w / 2), 0.5, -math.floor(h / 2))
+            self.Main.Size = UDim2.fromOffset(w, h)
+            self.Main.Position = UDim2.new(0.5, -math.floor(w / 2), 0.5,
+                                           -math.floor(h / 2))
         end
     end
 
     self.Top = New("Frame", {
-        Parent           = self.Main,
-        Size             = UDim2.new(1, 0, 0, 30),
+        Parent = self.Main,
+        Size = UDim2.new(1, 0, 0, 30),
         BackgroundColor3 = C.Top,
-        BorderSizePixel  = 0,
-        ZIndex           = 11
+        BorderSizePixel = 0,
+        ZIndex = 11
     })
 
     New("TextLabel", {
-        Parent             = self.Top,
-        Size               = UDim2.new(1, -45, 1, 0),
-        Position           = UDim2.fromOffset(10, 0),
+        Parent = self.Top,
+        Size = UDim2.new(1, -45, 1, 0),
+        Position = UDim2.fromOffset(10, 0),
         BackgroundTransparency = 1,
-        Text               = title or "Nova",
-        TextColor3         = C.Text,
-        TextSize           = 11,
-        Font               = Enum.Font.GothamBold,
-        TextXAlignment     = Enum.TextXAlignment.Left,
-        ZIndex             = 12
+        Text = title or "Nova",
+        TextColor3 = C.Text,
+        TextSize = 11,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 12
     })
 
     local close = New("TextButton", {
-        Parent              = self.Top,
-        Size                = UDim2.fromOffset(25, 24),
-        Position            = UDim2.new(1, -29, 0, 3),
+        Parent = self.Top,
+        Size = UDim2.fromOffset(25, 24),
+        Position = UDim2.new(1, -29, 0, 3),
         BackgroundTransparency = 1,
-        Text                = "×",
-        TextColor3          = C.SubText,
-        TextSize            = 16,
-        Font                = Enum.Font.GothamMedium,
-        AutoButtonColor     = false,
-        ZIndex              = 12
+        Text = "×",
+        TextColor3 = C.SubText,
+        TextSize = 16,
+        Font = Enum.Font.GothamMedium,
+        AutoButtonColor = false,
+        ZIndex = 12
     })
 
     close.MouseButton1Click:Connect(function()
@@ -161,19 +168,19 @@ function NovaUI.new(title)
     end)
 
     self.Sidebar = New("Frame", {
-        Parent           = self.Main,
-        Size             = UDim2.new(0, 35, 1, -30),
-        Position         = UDim2.fromOffset(0, 30),
+        Parent = self.Main,
+        Size = UDim2.new(0, 35, 1, -30),
+        Position = UDim2.fromOffset(0, 30),
         BackgroundColor3 = C.Sidebar,
-        BorderSizePixel  = 0,
-        ZIndex           = 11
+        BorderSizePixel = 0,
+        ZIndex = 11
     })
 
     New("UIListLayout", {
-        Parent               = self.Sidebar,
-        SortOrder            = Enum.SortOrder.LayoutOrder,
-        HorizontalAlignment  = Enum.HorizontalAlignment.Center,
-        Padding              = UDim.new(0, 4)
+        Parent = self.Sidebar,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        Padding = UDim.new(0, 4)
     })
 
     local sidePadding = Instance.new("UIPadding")
@@ -181,12 +188,12 @@ function NovaUI.new(title)
     sidePadding.Parent = self.Sidebar
 
     self.Content = New("Frame", {
-        Parent           = self.Main,
-        Size             = UDim2.new(1, -35, 1, -30),
-        Position         = UDim2.fromOffset(35, 30),
+        Parent = self.Main,
+        Size = UDim2.new(1, -35, 1, -30),
+        Position = UDim2.fromOffset(35, 30),
         BackgroundColor3 = C.Background,
-        BorderSizePixel  = 0,
-        ZIndex           = 11
+        BorderSizePixel = 0,
+        ZIndex = 11
     })
 
     -- ================================================================
@@ -196,8 +203,8 @@ function NovaUI.new(title)
     -- LayoutOrder terbesar → tombol Setting selalu di paling bawah,
     -- berapapun jumlah page yang ditambahkan user
     self.SettingPage.Button.LayoutOrder = 999999999
-    self.SettingPage.Frame.Visible      = false
-    self.CurrentPage                    = nil
+    self.SettingPage.Frame.Visible = false
+    self.CurrentPage = nil
 
     self.SettingPage:AddTitle("Setting")
 
@@ -207,13 +214,12 @@ function NovaUI.new(title)
     -- "Filesystem unavailable" tanpa crash.
     -- ================================================================
     local CONFIG_FOLDER = "NovaUI_Configs"
-    local FS_OK = (typeof(readfile) == "function"
-        and typeof(writefile) == "function"
-        and typeof(listfiles) == "function")
+    local FS_OK = (typeof(readfile) == "function" and typeof(writefile) ==
+                      "function" and typeof(listfiles) == "function")
 
-    local cfgSelected  = nil   -- nama file yang dipilih di list
+    local cfgSelected = nil -- nama file yang dipilih di list
     local cfgStatusLbl = nil
-    local cfgNameBox   = nil
+    local cfgNameBox = nil
 
     local function cfgFileName(raw)
         raw = tostring(raw):gsub("%.json%s*$", "")
@@ -225,42 +231,43 @@ function NovaUI.new(title)
     local function cfgSetStatus(msg, isError)
         if cfgStatusLbl then
             cfgStatusLbl.Text = msg
-            cfgStatusLbl.TextColor3 = isError and Color3.fromRGB(230, 65, 85) or C.Text
+            cfgStatusLbl.TextColor3 = isError and Color3.fromRGB(230, 65, 85) or
+                                          C.Text
         end
     end
 
     -- ---- file list panel ----
     local fileList = New("ScrollingFrame", {
-        Parent              = self.SettingPage.Frame,
-        Size                = UDim2.new(1, 0, 0, 54),
-        BackgroundColor3    = C.Background,
-        BorderSizePixel     = 0,
-        ScrollBarThickness  = 2,
+        Parent = self.SettingPage.Frame,
+        Size = UDim2.new(1, 0, 0, 54),
+        BackgroundColor3 = C.Background,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 2,
         ScrollBarImageColor3 = C.Border,
-        CanvasSize          = UDim2.new(0, 0, 0, 0),
+        CanvasSize = UDim2.new(0, 0, 0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ScrollingDirection  = Enum.ScrollingDirection.Y,
-        ClipsDescendants    = true,
-        ZIndex              = 13
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        ClipsDescendants = true,
+        ZIndex = 13
     })
     Corner(fileList, 4)
     Stroke(fileList)
 
     -- ---- file name textbox ----
     cfgNameBox = New("TextBox", {
-        Parent             = self.SettingPage.Frame,
-        Size               = UDim2.new(1, 0, 0, 18),
-        BackgroundColor3   = C.Element,
-        BorderSizePixel    = 0,
-        Text               = "",
-        PlaceholderText    = "File name...",
-        PlaceholderColor3  = C.SubText,
-        TextColor3         = C.Text,
-        TextSize           = 9,
-        Font               = Enum.Font.Gotham,
-        TextXAlignment     = Enum.TextXAlignment.Left,
-        ClearTextOnFocus   = false,
-        ZIndex             = 13
+        Parent = self.SettingPage.Frame,
+        Size = UDim2.new(1, 0, 0, 18),
+        BackgroundColor3 = C.Element,
+        BorderSizePixel = 0,
+        Text = "",
+        PlaceholderText = "File name...",
+        PlaceholderColor3 = C.SubText,
+        TextColor3 = C.Text,
+        TextSize = 9,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ClearTextOnFocus = false,
+        ZIndex = 13
     })
     local np = Instance.new("UIPadding")
     np.PaddingLeft = UDim.new(0, 6)
@@ -271,42 +278,46 @@ function NovaUI.new(title)
     -- ---- helper: baris 2 tombol ----
     local function cfgButtonRow(text1, text2)
         local row = New("Frame", {
-            Parent                 = self.SettingPage.Frame,
-            Size                   = UDim2.new(1, 0, 0, 20),
+            Parent = self.SettingPage.Frame,
+            Size = UDim2.new(1, 0, 0, 20),
             BackgroundTransparency = 1,
-            BorderSizePixel        = 0,
-            ZIndex                 = 13
+            BorderSizePixel = 0,
+            ZIndex = 13
         })
         local b1 = New("TextButton", {
-            Parent          = row,
-            Size            = UDim2.new(0.5, -3, 1, 0),
+            Parent = row,
+            Size = UDim2.new(0.5, -3, 1, 0),
             BackgroundColor3 = C.Element,
             BorderSizePixel = 0,
-            Text            = text1,
-            TextColor3      = C.Text,
-            TextSize        = 9,
-            Font            = Enum.Font.GothamMedium,
+            Text = text1,
+            TextColor3 = C.Text,
+            TextSize = 9,
+            Font = Enum.Font.GothamMedium,
             AutoButtonColor = false,
-            ZIndex          = 14
+            ZIndex = 14
         })
         local b2 = New("TextButton", {
-            Parent          = row,
-            Position        = UDim2.new(0.5, 3, 0, 0),
-            Size            = UDim2.new(0.5, -3, 1, 0),
+            Parent = row,
+            Position = UDim2.new(0.5, 3, 0, 0),
+            Size = UDim2.new(0.5, -3, 1, 0),
             BackgroundColor3 = C.Element,
             BorderSizePixel = 0,
-            Text            = text2,
-            TextColor3      = C.Text,
-            TextSize        = 9,
-            Font            = Enum.Font.GothamMedium,
+            Text = text2,
+            TextColor3 = C.Text,
+            TextSize = 9,
+            Font = Enum.Font.GothamMedium,
             AutoButtonColor = false,
-            ZIndex          = 14
+            ZIndex = 14
         })
-        for _, b in ipairs({ b1, b2 }) do
+        for _, b in ipairs({b1, b2}) do
             Corner(b, 4)
             Stroke(b)
-            b.MouseEnter:Connect(function() b.BackgroundColor3 = C.ElementHover end)
-            b.MouseLeave:Connect(function() b.BackgroundColor3 = C.Element end)
+            b.MouseEnter:Connect(function()
+                b.BackgroundColor3 = C.ElementHover
+            end)
+            b.MouseLeave:Connect(function()
+                b.BackgroundColor3 = C.Element
+            end)
         end
         return b1, b2
     end
@@ -316,34 +327,36 @@ function NovaUI.new(title)
 
     -- ---- status feedback ----
     cfgStatusLbl = New("TextLabel", {
-        Parent             = self.SettingPage.Frame,
-        Size               = UDim2.new(1, 0, 0, 12),
+        Parent = self.SettingPage.Frame,
+        Size = UDim2.new(1, 0, 0, 12),
         BackgroundTransparency = 1,
-        Text               = FS_OK and "" or "Filesystem unavailable",
-        TextColor3         = FS_OK and C.SubText or Color3.fromRGB(230, 65, 85),
-        TextSize           = 8,
-        Font               = Enum.Font.Gotham,
-        TextXAlignment     = Enum.TextXAlignment.Left,
-        ZIndex             = 13
+        Text = FS_OK and "" or "Filesystem unavailable",
+        TextColor3 = FS_OK and C.SubText or Color3.fromRGB(230, 65, 85),
+        TextSize = 8,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 13
     })
 
     local function refreshFiles()
         for _, c in pairs(fileList:GetChildren()) do
-            if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end
+            if c:IsA("TextButton") or c:IsA("TextLabel") then
+                c:Destroy()
+            end
         end
 
         if not FS_OK then
             New("TextLabel", {
-                Parent             = fileList,
-                Size               = UDim2.new(1, -8, 0, 14),
-                Position           = UDim2.fromOffset(4, 3),
+                Parent = fileList,
+                Size = UDim2.new(1, -8, 0, 14),
+                Position = UDim2.fromOffset(4, 3),
                 BackgroundTransparency = 1,
-                Text               = "Filesystem unavailable",
-                TextColor3         = Color3.fromRGB(230, 65, 85),
-                TextSize           = 8,
-                Font               = Enum.Font.Gotham,
-                TextXAlignment     = Enum.TextXAlignment.Left,
-                ZIndex             = 14
+                Text = "Filesystem unavailable",
+                TextColor3 = Color3.fromRGB(230, 65, 85),
+                TextSize = 8,
+                Font = Enum.Font.Gotham,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 14
             })
             return
         end
@@ -361,34 +374,34 @@ function NovaUI.new(title)
 
         if #files == 0 then
             New("TextLabel", {
-                Parent             = fileList,
-                Size               = UDim2.new(1, -8, 0, 14),
-                Position           = UDim2.fromOffset(4, 3),
+                Parent = fileList,
+                Size = UDim2.new(1, -8, 0, 14),
+                Position = UDim2.fromOffset(4, 3),
                 BackgroundTransparency = 1,
-                Text               = "No configuration files",
-                TextColor3         = C.SubText,
-                TextSize           = 8,
-                Font               = Enum.Font.Gotham,
-                TextXAlignment     = Enum.TextXAlignment.Left,
-                ZIndex             = 14
+                Text = "No configuration files",
+                TextColor3 = C.SubText,
+                TextSize = 8,
+                Font = Enum.Font.Gotham,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 14
             })
             return
         end
 
         for i, nm in ipairs(files) do
             local fb = New("TextButton", {
-                Parent          = fileList,
-                Position        = UDim2.new(0, 4, 0, (i - 1) * 16 + 2),
-                Size            = UDim2.new(1, -8, 0, 14),
+                Parent = fileList,
+                Position = UDim2.new(0, 4, 0, (i - 1) * 16 + 2),
+                Size = UDim2.new(1, -8, 0, 14),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
-                Text            = nm,
-                TextColor3      = (nm == cfgSelected) and C.Accent or C.Text,
-                TextSize        = 8,
-                Font            = Enum.Font.Gotham,
-                TextXAlignment  = Enum.TextXAlignment.Left,
+                Text = nm,
+                TextColor3 = (nm == cfgSelected) and C.Accent or C.Text,
+                TextSize = 8,
+                Font = Enum.Font.Gotham,
+                TextXAlignment = Enum.TextXAlignment.Left,
                 AutoButtonColor = false,
-                ZIndex          = 14
+                ZIndex = 14
             })
             fb.MouseButton1Click:Connect(function()
                 cfgSelected = nm
@@ -403,30 +416,43 @@ function NovaUI.new(title)
         for _, item in ipairs(self.ConfigItems) do
             local ok, val = pcall(item.Get)
             if ok and val ~= nil then
-                data[item.Name] = { type = item.Type, value = val }
+                data[item.Name] = {type = item.Type, value = val}
             end
         end
-        return { values = data }
+        return {values = data}
     end
 
     local function doSave()
-        if not FS_OK then cfgSetStatus("Filesystem unavailable", true) return end
+        if not FS_OK then
+            cfgSetStatus("Filesystem unavailable", true)
+            return
+        end
         local raw = cfgNameBox.Text
-        if raw == "" then cfgSetStatus("No file name", true) return end
+        if raw == "" then
+            cfgSetStatus("No file name", true)
+            return
+        end
 
         local name = cfgFileName(raw)
         local okEnc, encoded = pcall(function()
             return HttpService:JSONEncode(collectConfig())
         end)
-        if not okEnc then cfgSetStatus("Encode error", true) return end
+        if not okEnc then
+            cfgSetStatus("Encode error", true)
+            return
+        end
 
         local okWrite = pcall(function()
-            if typeof(isfolder) == "function" and not isfolder(CONFIG_FOLDER) and typeof(makefolder) == "function" then
+            if typeof(isfolder) == "function" and not isfolder(CONFIG_FOLDER) and
+                typeof(makefolder) == "function" then
                 makefolder(CONFIG_FOLDER)
             end
             writefile(CONFIG_FOLDER .. "/" .. name, encoded)
         end)
-        if not okWrite then cfgSetStatus("Save failed", true) return end
+        if not okWrite then
+            cfgSetStatus("Save failed", true)
+            return
+        end
 
         cfgSelected = name
         cfgSetStatus("Saved: " .. name)
@@ -434,9 +460,15 @@ function NovaUI.new(title)
     end
 
     local function doCreate()
-        if not FS_OK then cfgSetStatus("Filesystem unavailable", true) return end
+        if not FS_OK then
+            cfgSetStatus("Filesystem unavailable", true)
+            return
+        end
         local raw = cfgNameBox.Text
-        if raw == "" then cfgSetStatus("No file name", true) return end
+        if raw == "" then
+            cfgSetStatus("No file name", true)
+            return
+        end
 
         local name = cfgFileName(raw)
         if typeof(isfile) == "function" and isfile(CONFIG_FOLDER .. "/" .. name) then
@@ -447,15 +479,22 @@ function NovaUI.new(title)
         local okEnc, encoded = pcall(function()
             return HttpService:JSONEncode(collectConfig())
         end)
-        if not okEnc then cfgSetStatus("Encode error", true) return end
+        if not okEnc then
+            cfgSetStatus("Encode error", true)
+            return
+        end
 
         local okWrite = pcall(function()
-            if typeof(isfolder) == "function" and not isfolder(CONFIG_FOLDER) and typeof(makefolder) == "function" then
+            if typeof(isfolder) == "function" and not isfolder(CONFIG_FOLDER) and
+                typeof(makefolder) == "function" then
                 makefolder(CONFIG_FOLDER)
             end
             writefile(CONFIG_FOLDER .. "/" .. name, encoded)
         end)
-        if not okWrite then cfgSetStatus("Create failed", true) return end
+        if not okWrite then
+            cfgSetStatus("Create failed", true)
+            return
+        end
 
         cfgSelected = name
         cfgSetStatus("Created: " .. name)
@@ -463,8 +502,14 @@ function NovaUI.new(title)
     end
 
     local function doLoad()
-        if not FS_OK then cfgSetStatus("Filesystem unavailable", true) return end
-        if not cfgSelected then cfgSetStatus("No file selected", true) return end
+        if not FS_OK then
+            cfgSetStatus("Filesystem unavailable", true)
+            return
+        end
+        if not cfgSelected then
+            cfgSetStatus("No file selected", true)
+            return
+        end
 
         local path = CONFIG_FOLDER .. "/" .. cfgSelected
         if typeof(isfile) == "function" and not isfile(path) then
@@ -473,7 +518,10 @@ function NovaUI.new(title)
         end
 
         local okRead, content = pcall(readfile, path)
-        if not okRead then cfgSetStatus("Read failed", true) return end
+        if not okRead then
+            cfgSetStatus("Read failed", true)
+            return
+        end
 
         local okDec, decoded = pcall(function()
             return HttpService:JSONDecode(content)
@@ -487,7 +535,8 @@ function NovaUI.new(title)
         local applied = 0
         for _, item in ipairs(self.ConfigItems) do
             local entry = data[item.Name]
-            if typeof(entry) == "table" and entry.value ~= nil and entry.type == item.Type then
+            if typeof(entry) == "table" and entry.value ~= nil and entry.type ==
+                item.Type then
                 local okSet = pcall(item.Set, entry.value)
                 if okSet then applied = applied + 1 end
             end
@@ -499,7 +548,10 @@ function NovaUI.new(title)
     createBtn.MouseButton1Click:Connect(doCreate)
     loadBtn.MouseButton1Click:Connect(doLoad)
     refreshBtn.MouseButton1Click:Connect(function()
-        if not FS_OK then cfgSetStatus("Filesystem unavailable", true) return end
+        if not FS_OK then
+            cfgSetStatus("Filesystem unavailable", true)
+            return
+        end
         refreshFiles()
         cfgSetStatus("Refreshed")
     end)
@@ -520,77 +572,77 @@ function NovaUI.new(title)
         else
             KeybindListWindow.Hide()
         end
-    end, { keybind = false })
+    end, {keybind = false})
 
     -- ================================================================
     -- KEYBIND UI (Setting): hide/show MENU UI saja
     -- Tidak masuk Keybind List, hanya untuk sembunyi/tampil menu
     -- ================================================================
     local kbHolder = New("Frame", {
-        Parent          = self.SettingPage.Frame,
-        Size            = UDim2.new(1, 0, 0, 25),
+        Parent = self.SettingPage.Frame,
+        Size = UDim2.new(1, 0, 0, 25),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ZIndex          = 13
+        ZIndex = 13
     })
 
     New("TextLabel", {
-        Parent             = kbHolder,
-        Size               = UDim2.new(1, -110, 1, 0),
+        Parent = kbHolder,
+        Size = UDim2.new(1, -110, 1, 0),
         BackgroundTransparency = 1,
-        Text               = "Hide UI",
-        TextColor3         = C.Text,
-        TextSize           = 12,
-        Font               = Enum.Font.GothamMedium,
-        TextXAlignment     = Enum.TextXAlignment.Left,
-        TextYAlignment     = Enum.TextYAlignment.Center,
-        ZIndex             = 14
+        Text = "Hide UI",
+        TextColor3 = C.Text,
+        TextSize = 12,
+        Font = Enum.Font.GothamMedium,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+        ZIndex = 14
     })
 
     local uiKeyBtn = New("TextButton", {
-        Parent          = kbHolder,
-        AnchorPoint     = Vector2.new(1, 0.5),
-        Position        = UDim2.new(1, -4, 0.5, 0),
-        Size            = UDim2.fromOffset(96, 22),
+        Parent = kbHolder,
+        AnchorPoint = Vector2.new(1, 0.5),
+        Position = UDim2.new(1, -4, 0.5, 0),
+        Size = UDim2.fromOffset(96, 22),
         BackgroundColor3 = C.Element,
         BorderSizePixel = 0,
-        Text            = "None",
-        TextColor3      = C.SubText,
-        TextSize        = 9,
-        Font            = Enum.Font.GothamMedium,
+        Text = "None",
+        TextColor3 = C.SubText,
+        TextSize = 9,
+        Font = Enum.Font.GothamMedium,
         AutoButtonColor = false,
-        ZIndex          = 14
+        ZIndex = 14
     })
     Corner(uiKeyBtn, 4)
     Stroke(uiKeyBtn)
 
-    local uiKey       = nil
+    local uiKey = nil
     local uiRecording = false
 
     uiKeyBtn.MouseButton1Click:Connect(function()
         if uiRecording then return end
         uiRecording = true
         KeybindList.StartRecording()
-        uiKeyBtn.Text       = "Press key..."
-        uiKeyBtn.TextSize   = 8
+        uiKeyBtn.Text = "Press key..."
+        uiKeyBtn.TextSize = 8
         uiKeyBtn.TextColor3 = C.Text
     end)
 
     UIS.InputBegan:Connect(function(input, gameProcessed)
         if uiRecording then
             if input.KeyCode == Enum.KeyCode.Backspace then
-                uiKey       = nil
-                uiKeyBtn.Text       = "None"
-                uiKeyBtn.TextSize   = 9
+                uiKey = nil
+                uiKeyBtn.Text = "None"
+                uiKeyBtn.TextSize = 9
                 uiKeyBtn.TextColor3 = C.SubText
                 uiRecording = false
                 KeybindList.StopRecording()
                 return
             end
             if input.UserInputType == Enum.UserInputType.Keyboard then
-                uiKey       = input.KeyCode
-                uiKeyBtn.Text       = uiKey.Name
-                uiKeyBtn.TextSize   = 9
+                uiKey = input.KeyCode
+                uiKeyBtn.Text = uiKey.Name
+                uiKeyBtn.TextSize = 9
                 uiKeyBtn.TextColor3 = C.Text
                 uiRecording = false
                 KeybindList.StopRecording()
@@ -603,24 +655,56 @@ function NovaUI.new(title)
         end
     end)
 
+    -- // Re-parent UI if Roblox removes/reparents it during respawn
+    Player.CharacterAdded:Connect(function()
+        task.defer(function()
+            task.wait(0.1)
+
+            if self.Gui and self.Gui.Parent ~= PlayerGui then
+                self.Gui.Parent = PlayerGui
+            end
+
+            if self.ColorGui and self.ColorGui.Parent ~= PlayerGui then
+                self.ColorGui.Parent = PlayerGui
+            end
+
+            if self.Gui then self.Gui.ResetOnSpawn = false end
+
+            if self.ColorGui then self.ColorGui.ResetOnSpawn = false end
+        end)
+    end)
+
+    PlayerGui.ChildRemoved:Connect(function(child)
+        if child == self.Gui or child == self.ColorGui then
+            task.defer(function()
+                if child and child.Parent == nil then
+                    child.Parent = PlayerGui
+                end
+            end)
+        end
+    end)
+
     -- Drag
     local dragging = false
     local dragStart, startPos
 
     self.Top.InputBegan:Connect(function(input)
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-        dragging  = true
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+            return
+        end
+        dragging = true
         dragStart = input.Position
-        startPos  = self.Main.Position
+        startPos = self.Main.Position
     end)
 
     UIS.InputChanged:Connect(function(input)
-        if not dragging or input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+        if not dragging or input.UserInputType ~=
+            Enum.UserInputType.MouseMovement then return end
         local delta = input.Position - dragStart
-        self.Main.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
+        self.Main.Position = UDim2.new(startPos.X.Scale,
+                                       startPos.X.Offset + delta.X,
+                                       startPos.Y.Scale,
+                                       startPos.Y.Offset + delta.Y)
     end)
 
     UIS.InputEnded:Connect(function(input)
@@ -634,13 +718,13 @@ end
 
 function NovaUI:SelectPage(page)
     for _, p in ipairs(self.Pages) do
-        p.Frame.Visible       = false
+        p.Frame.Visible = false
         p.Button.BackgroundColor3 = C.Sidebar
-        p.Button.TextColor3   = C.SubText
+        p.Button.TextColor3 = C.SubText
     end
-    page.Frame.Visible        = true
+    page.Frame.Visible = true
     page.Button.BackgroundColor3 = C.Accent2
-    page.Button.TextColor3    = Color3.new(1, 1, 1)
+    page.Button.TextColor3 = Color3.new(1, 1, 1)
     self.CurrentPage = page
 end
 
@@ -653,42 +737,42 @@ function NovaUI:AddPage(name, icon)
     page.Icon = icon or name:sub(1, 1)
 
     page.Frame = New("ScrollingFrame", {
-        Parent               = self.Content,
-        Size                 = UDim2.fromScale(1, 1),
+        Parent = self.Content,
+        Size = UDim2.fromScale(1, 1),
         BackgroundTransparency = 1,
-        BorderSizePixel      = 0,
-        ScrollBarThickness   = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 1,
         ScrollBarImageColor3 = C.Border,
-        CanvasSize           = UDim2.new(),
-        AutomaticCanvasSize  = Enum.AutomaticSize.Y,
-        Visible              = false,
-        ZIndex               = 12
+        CanvasSize = UDim2.new(),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        Visible = false,
+        ZIndex = 12
     })
 
     local padding = Instance.new("UIPadding")
-    padding.PaddingTop    = UDim.new(0, 6)
+    padding.PaddingTop = UDim.new(0, 6)
     padding.PaddingBottom = UDim.new(0, 5)
-    padding.PaddingLeft   = UDim.new(0, 7)
-    padding.PaddingRight  = UDim.new(0, 7)
+    padding.PaddingLeft = UDim.new(0, 7)
+    padding.PaddingRight = UDim.new(0, 7)
     padding.Parent = page.Frame
 
     New("UIListLayout", {
-        Parent    = page.Frame,
+        Parent = page.Frame,
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding   = UDim.new(0, 3)
+        Padding = UDim.new(0, 3)
     })
 
     page.Button = New("TextButton", {
-        Parent          = self.Sidebar,
-        Size            = UDim2.fromOffset(28, 28),
+        Parent = self.Sidebar,
+        Size = UDim2.fromOffset(28, 28),
         BackgroundColor3 = C.Sidebar,
         BorderSizePixel = 0,
-        Text            = page.Icon,
-        TextColor3      = C.SubText,
-        TextSize        = 10,
-        Font            = Enum.Font.GothamBold,
+        Text = page.Icon,
+        TextColor3 = C.SubText,
+        TextSize = 10,
+        Font = Enum.Font.GothamBold,
         AutoButtonColor = false,
-        ZIndex          = 12
+        ZIndex = 12
     })
     Corner(page.Button, 4)
 
@@ -698,9 +782,7 @@ function NovaUI:AddPage(name, icon)
     end)
 
     table.insert(self.Pages, page)
-    if not self.CurrentPage then
-        self:SelectPage(page)
-    end
+    if not self.CurrentPage then self:SelectPage(page) end
 
     -- ================================================================
     -- TITLE
@@ -708,15 +790,15 @@ function NovaUI:AddPage(name, icon)
     function page:AddTitle(text)
         ui:EnsureWidth(EstTextWidth(text, 7) + 60)
         return New("TextLabel", {
-            Parent             = page.Frame,
-            Size               = UDim2.new(1, 0, 0, 19),
+            Parent = page.Frame,
+            Size = UDim2.new(1, 0, 0, 19),
             BackgroundTransparency = 1,
-            Text               = text,
-            TextColor3         = C.Text,
-            TextSize           = 12,
-            Font               = Enum.Font.GothamBold,
-            TextXAlignment     = Enum.TextXAlignment.Left,
-            ZIndex             = 13
+            Text = text,
+            TextColor3 = C.Text,
+            TextSize = 12,
+            Font = Enum.Font.GothamBold,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 13
         })
     end
 
@@ -726,15 +808,15 @@ function NovaUI:AddPage(name, icon)
     function page:AddLabel(text)
         ui:EnsureWidth(EstTextWidth(text, 5) + 60)
         return New("TextLabel", {
-            Parent             = page.Frame,
-            Size               = UDim2.new(1, 0, 0, 20),
+            Parent = page.Frame,
+            Size = UDim2.new(1, 0, 0, 20),
             BackgroundTransparency = 1,
-            Text               = text,
-            TextColor3         = C.SubText,
-            TextSize           = 9,
-            Font               = Enum.Font.GothamMedium,
-            TextXAlignment     = Enum.TextXAlignment.Left,
-            ZIndex             = 13
+            Text = text,
+            TextColor3 = C.SubText,
+            TextSize = 9,
+            Font = Enum.Font.GothamMedium,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 13
         })
     end
 
@@ -744,21 +826,22 @@ function NovaUI:AddPage(name, icon)
     function page:AddToggle(text, default, callback, options)
         options = options or {}
 
-        local enabled      = default == true
-        local bindEnabled  = options.keybind ~= false -- default semua toggle punya keybind; matikan dengan { keybind = false }
-        local colorEnabled = options.colorpicker == true or options.COLORPICKER == true
-        local currentKey   = nil
-        local recording    = false
-        local kbEntry      = nil -- auto-registered ke KeybindList saat keybind aktif
-        local sheetAnim    = nil -- animasi sub-sheet (opsi sheet = true)
+        local enabled = default == true
+        local bindEnabled = options.keybind ~= false -- default semua toggle punya keybind; matikan dengan { keybind = false }
+        local colorEnabled =
+            options.colorpicker == true or options.COLORPICKER == true
+        local currentKey = nil
+        local recording = false
+        local kbEntry = nil -- auto-registered ke KeybindList saat keybind aktif
+        local sheetAnim = nil -- animasi sub-sheet (opsi sheet = true)
         local currentColor = options.color or options.Color or C.Accent
 
         local holder = New("Frame", {
-            Parent          = page.Frame,
-            Size            = UDim2.new(1, 0, 0, 25),
+            Parent = page.Frame,
+            Size = UDim2.new(1, 0, 0, 25),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            ZIndex          = 13
+            ZIndex = 13
         })
 
         -- Anti-tabrakan: window melebar kalau nama toggle panjang
@@ -766,44 +849,46 @@ function NovaUI:AddPage(name, icon)
         ui:EnsureWidth(neededWidth)
 
         local label = New("TextLabel", {
-            Parent             = holder,
-            Size               = UDim2.new(1, -120, 1, 0), -- sisakan ruang tombol kanan
+            Parent = holder,
+            Size = UDim2.new(1, -120, 1, 0), -- sisakan ruang tombol kanan
             BackgroundTransparency = 1,
-            Text               = text,
-            TextColor3         = enabled and C.Text or C.SubText,
-            TextSize           = 12,
-            Font               = Enum.Font.GothamMedium,
-            TextXAlignment     = Enum.TextXAlignment.Left,
-            TextYAlignment     = Enum.TextYAlignment.Center,
-            ZIndex             = 14
+            Text = text,
+            TextColor3 = enabled and C.Text or C.SubText,
+            TextSize = 12,
+            Font = Enum.Font.GothamMedium,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Center,
+            ZIndex = 14
         })
 
         local toggleButton = New("TextButton", {
-            Parent          = holder,
-            Size            = UDim2.fromOffset(21, 21),
-            Position        = UDim2.new(1, -21, 0.5, -10.5),
+            Parent = holder,
+            Size = UDim2.fromOffset(21, 21),
+            Position = UDim2.new(1, -21, 0.5, -10.5),
             BackgroundColor3 = C.Element,
             BorderSizePixel = 0,
-            Text            = "",
+            Text = "",
             AutoButtonColor = false,
-            ZIndex          = 15
+            ZIndex = 15
         })
         Corner(toggleButton, 4)
 
         -- indikator ON toggle: warna ACCENT (ikut theme)
         local colorSquare = New("Frame", {
-            Parent           = toggleButton,
+            Parent = toggleButton,
             BackgroundColor3 = C.Accent,
-            Position         = UDim2.new(0.5, 0, 0.5, 0),
-            Size             = enabled and UDim2.fromOffset(14, 14) or UDim2.fromOffset(0, 0),
-            AnchorPoint      = Vector2.new(0.5, 0.5),
-            ZIndex           = 16
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = enabled and UDim2.fromOffset(14, 14) or
+                UDim2.fromOffset(0, 0),
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            ZIndex = 16
         })
         Corner(colorSquare, 2)
 
         local function refreshToggle()
             TweenService:Create(colorSquare, TweenInfo.new(0.12), {
-                Size             = enabled and UDim2.fromOffset(14, 14) or UDim2.fromOffset(0, 0),
+                Size = enabled and UDim2.fromOffset(14, 14) or
+                    UDim2.fromOffset(0, 0),
                 BackgroundColor3 = C.Accent
             }):Play()
             label.TextColor3 = enabled and C.Text or C.SubText
@@ -836,66 +921,66 @@ function NovaUI:AddPage(name, icon)
         -- ============================================================
         if colorEnabled then
             colorButton = New("TextButton", {
-                Parent          = holder,
-                Size            = UDim2.fromOffset(20, 20),
-                Position        = UDim2.new(1, -47, 0.5, -10),
+                Parent = holder,
+                Size = UDim2.fromOffset(20, 20),
+                Position = UDim2.new(1, -47, 0.5, -10),
                 BackgroundColor3 = currentColor,
                 BorderSizePixel = 0,
-                Text            = "",
+                Text = "",
                 AutoButtonColor = false,
-                Active          = true,
-                Selectable      = false,
-                ZIndex          = 30
+                Active = true,
+                Selectable = false,
+                ZIndex = 30
             })
             Corner(colorButton, 4)
             Stroke(colorButton)
 
             -- FIX: parent popup to ui.ColorGui (not self.ColorGui — self is page here)
             popup = New("Frame", {
-                Parent          = ui.ColorGui,
-                Size            = UDim2.fromOffset(230, 245),
+                Parent = ui.ColorGui,
+                Size = UDim2.fromOffset(230, 245),
                 BackgroundColor3 = C.Top,
                 BorderSizePixel = 0,
-                Position        = UDim2.fromOffset(-9999, -9999),
-                Visible         = false,
-                Active          = true,
-                ZIndex          = 1000
+                Position = UDim2.fromOffset(-9999, -9999),
+                Visible = false,
+                Active = true,
+                ZIndex = 1000
             })
             Corner(popup, 6)
             Stroke(popup)
 
             local header = New("Frame", {
-                Parent             = popup,
-                Size               = UDim2.new(1, 0, 0, 30),
+                Parent = popup,
+                Size = UDim2.new(1, 0, 0, 30),
                 BackgroundTransparency = 1,
-                Active             = true,
-                ZIndex             = 1001
+                Active = true,
+                ZIndex = 1001
             })
 
             New("TextLabel", {
-                Parent             = header,
-                Size               = UDim2.new(1, -40, 1, 0),
-                Position           = UDim2.fromOffset(10, 0),
+                Parent = header,
+                Size = UDim2.new(1, -40, 1, 0),
+                Position = UDim2.fromOffset(10, 0),
                 BackgroundTransparency = 1,
-                Text               = "Color Picker",
-                TextColor3         = C.Text,
-                TextSize           = 11,
-                Font               = Enum.Font.GothamBold,
-                TextXAlignment     = Enum.TextXAlignment.Left,
-                ZIndex             = 1002
+                Text = "Color Picker",
+                TextColor3 = C.Text,
+                TextSize = 11,
+                Font = Enum.Font.GothamBold,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 1002
             })
 
             local closePicker = New("TextButton", {
-                Parent             = header,
-                Size               = UDim2.fromOffset(25, 24),
-                Position           = UDim2.new(1, -29, 0, 3),
+                Parent = header,
+                Size = UDim2.fromOffset(25, 24),
+                Position = UDim2.new(1, -29, 0, 3),
                 BackgroundTransparency = 1,
-                Text               = "×",
-                TextColor3         = C.SubText,
-                TextSize           = 15,
-                Font               = Enum.Font.GothamMedium,
-                AutoButtonColor    = false,
-                ZIndex             = 1002
+                Text = "×",
+                TextColor3 = C.SubText,
+                TextSize = 15,
+                Font = Enum.Font.GothamMedium,
+                AutoButtonColor = false,
+                ZIndex = 1002
             })
 
             -- FIX: was ClosePicker(self) — self = page, wrong object
@@ -904,25 +989,29 @@ function NovaUI:AddPage(name, icon)
             end)
 
             -- FIX: popup color picker sekarang bisa di-drag lewat header
-            local draggingPopup    = false
-            local popupDragStart   = nil
-            local popupStartPos    = nil
+            local draggingPopup = false
+            local popupDragStart = nil
+            local popupStartPos = nil
 
             header.InputBegan:Connect(function(input)
-                if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+                if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+                    return
+                end
                 draggingPopup = true
                 popupDragStart = input.Position
-                popupStartPos  = popup.Position
+                popupStartPos = popup.Position
             end)
 
             UIS.InputChanged:Connect(function(input)
                 if not draggingPopup then return end
-                if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+                if input.UserInputType ~= Enum.UserInputType.MouseMovement then
+                    return
+                end
                 local delta = input.Position - popupDragStart
-                popup.Position = UDim2.new(
-                    popupStartPos.X.Scale, popupStartPos.X.Offset + delta.X,
-                    popupStartPos.Y.Scale, popupStartPos.Y.Offset + delta.Y
-                )
+                popup.Position = UDim2.new(popupStartPos.X.Scale,
+                                           popupStartPos.X.Offset + delta.X,
+                                           popupStartPos.Y.Scale,
+                                           popupStartPos.Y.Offset + delta.Y)
             end)
 
             UIS.InputEnded:Connect(function(input)
@@ -932,12 +1021,12 @@ function NovaUI:AddPage(name, icon)
             end)
 
             local preview = New("Frame", {
-                Parent           = popup,
-                Size             = UDim2.fromOffset(48, 24),
-                Position         = UDim2.new(1, -60, 0, 3),
+                Parent = popup,
+                Size = UDim2.fromOffset(48, 24),
+                Position = UDim2.new(1, -60, 0, 3),
                 BackgroundColor3 = currentColor,
-                BorderSizePixel  = 0,
-                ZIndex           = 1001
+                BorderSizePixel = 0,
+                ZIndex = 1001
             })
             Corner(preview, 4)
             Stroke(preview)
@@ -945,29 +1034,29 @@ function NovaUI:AddPage(name, icon)
             hue, sat, val = currentColor:ToHSV()
 
             local svButton = New("TextButton", {
-                Parent          = popup,
-                Size            = UDim2.fromOffset(185, 135),
-                Position        = UDim2.fromOffset(10, 36),
+                Parent = popup,
+                Size = UDim2.fromOffset(185, 135),
+                Position = UDim2.fromOffset(10, 36),
                 BackgroundColor3 = Color3.fromHSV(hue, 1, 1),
                 BorderSizePixel = 0,
-                Text            = "",
+                Text = "",
                 AutoButtonColor = false,
-                Active          = true,
-                ZIndex          = 1000
+                Active = true,
+                ZIndex = 1000
             })
             Corner(svButton, 5)
             Stroke(svButton)
 
             local white = New("Frame", {
-                Parent           = svButton,
-                Size             = UDim2.fromScale(1, 1),
+                Parent = svButton,
+                Size = UDim2.fromScale(1, 1),
                 BackgroundColor3 = Color3.new(1, 1, 1),
-                BorderSizePixel  = 0,
-                ZIndex           = 1001
+                BorderSizePixel = 0,
+                ZIndex = 1001
             })
             Corner(white, 5)
             New("UIGradient", {
-                Parent       = white,
+                Parent = white,
                 Transparency = NumberSequence.new({
                     NumberSequenceKeypoint.new(0, 0),
                     NumberSequenceKeypoint.new(1, 1)
@@ -975,16 +1064,16 @@ function NovaUI:AddPage(name, icon)
             })
 
             local black = New("Frame", {
-                Parent           = svButton,
-                Size             = UDim2.fromScale(1, 1),
+                Parent = svButton,
+                Size = UDim2.fromScale(1, 1),
                 BackgroundColor3 = Color3.new(0, 0, 0),
-                BorderSizePixel  = 0,
-                ZIndex           = 1002
+                BorderSizePixel = 0,
+                ZIndex = 1002
             })
             Corner(black, 5)
             New("UIGradient", {
-                Parent       = black,
-                Rotation     = 90,
+                Parent = black,
+                Rotation = 90,
                 Transparency = NumberSequence.new({
                     NumberSequenceKeypoint.new(0, 1),
                     NumberSequenceKeypoint.new(1, 0)
@@ -992,104 +1081,112 @@ function NovaUI:AddPage(name, icon)
             })
 
             local svCursor = New("Frame", {
-                Parent           = svButton,
-                Size             = UDim2.fromOffset(10, 10),
-                Position         = UDim2.new(sat, 0, 1 - val, 0),
-                AnchorPoint      = Vector2.new(0.5, 0.5),
+                Parent = svButton,
+                Size = UDim2.fromOffset(10, 10),
+                Position = UDim2.new(sat, 0, 1 - val, 0),
+                AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundColor3 = Color3.new(1, 1, 1),
-                BorderSizePixel  = 0,
-                ZIndex           = 1003
+                BorderSizePixel = 0,
+                ZIndex = 1003
             })
             Corner(svCursor, 5)
             Stroke(svCursor)
 
             local hueButton = New("TextButton", {
-                Parent          = popup,
-                Size            = UDim2.fromOffset(16, 135),
-                Position        = UDim2.fromOffset(202, 36),
+                Parent = popup,
+                Size = UDim2.fromOffset(16, 135),
+                Position = UDim2.fromOffset(202, 36),
                 BackgroundColor3 = Color3.new(1, 1, 1),
                 BorderSizePixel = 0,
-                Text            = "",
+                Text = "",
                 AutoButtonColor = false,
-                Active          = true,
-                ZIndex          = 1000
+                Active = true,
+                ZIndex = 1000
             })
             Corner(hueButton, 6)
             Stroke(hueButton)
 
             New("UIGradient", {
-                Parent   = hueButton,
+                Parent = hueButton,
                 Rotation = 90,
-                Color    = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0,     Color3.fromRGB(255, 0,   0)),
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
                     ColorSequenceKeypoint.new(0.166, Color3.fromRGB(255, 255, 0)),
-                    ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0,   255, 0)),
-                    ColorSequenceKeypoint.new(0.5,   Color3.fromRGB(0,   255, 255)),
-                    ColorSequenceKeypoint.new(0.666, Color3.fromRGB(0,   0,   255)),
-                    ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255, 0,   255)),
-                    ColorSequenceKeypoint.new(1,     Color3.fromRGB(255, 0,   0))
+                    ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0, 255, 0)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+                    ColorSequenceKeypoint.new(0.666, Color3.fromRGB(0, 0, 255)),
+                    ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255, 0, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
                 })
             })
 
             local hueCursor = New("Frame", {
-                Parent           = hueButton,
-                Size             = UDim2.fromOffset(20, 4),
-                Position         = UDim2.new(0.5, 0, hue, 0),
-                AnchorPoint      = Vector2.new(0.5, 0.5),
+                Parent = hueButton,
+                Size = UDim2.fromOffset(20, 4),
+                Position = UDim2.new(0.5, 0, hue, 0),
+                AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundColor3 = Color3.new(1, 1, 1),
-                BorderSizePixel  = 0,
-                ZIndex           = 1003
+                BorderSizePixel = 0,
+                ZIndex = 1003
             })
             Corner(hueCursor, 2)
             Stroke(hueCursor)
 
             local hexBox = New("TextLabel", {
-                Parent             = popup,
-                Size               = UDim2.new(1, -20, 0, 24),
-                Position           = UDim2.fromOffset(10, 181),
-                BackgroundColor3   = C.Element,
-                TextColor3         = C.SubText,
-                TextSize           = 9,
-                Font               = Enum.Font.GothamMedium,
-                TextXAlignment     = Enum.TextXAlignment.Center,
-                TextYAlignment     = Enum.TextYAlignment.Center,
-                ZIndex             = 1001
+                Parent = popup,
+                Size = UDim2.new(1, -20, 0, 24),
+                Position = UDim2.fromOffset(10, 181),
+                BackgroundColor3 = C.Element,
+                TextColor3 = C.SubText,
+                TextSize = 9,
+                Font = Enum.Font.GothamMedium,
+                TextXAlignment = Enum.TextXAlignment.Center,
+                TextYAlignment = Enum.TextYAlignment.Center,
+                ZIndex = 1001
             })
             Corner(hexBox, 4)
             Stroke(hexBox)
 
-            local draggingSV  = false
+            local draggingSV = false
             local draggingHue = false
 
             applyColor = function()
                 currentColor = Color3.fromHSV(hue, sat, val)
-                colorButton.BackgroundColor3  = currentColor
+                colorButton.BackgroundColor3 = currentColor
                 -- FIX: colorSquare (indikator ON toggle) tidak ikut diubah, tetap putih
-                preview.BackgroundColor3      = currentColor
-                if options.ColorCallback then pcall(options.ColorCallback, currentColor) end
-                svButton.BackgroundColor3     = Color3.fromHSV(hue, 1, 1)
-                svCursor.Position             = UDim2.new(sat, 0, 1 - val, 0)
-                hueCursor.Position            = UDim2.new(0.5, 0, hue, 0)
-                hexBox.Text = string.format(
-                    "#%02X%02X%02X",
-                    math.floor(currentColor.R * 255 + 0.5),
-                    math.floor(currentColor.G * 255 + 0.5),
-                    math.floor(currentColor.B * 255 + 0.5)
-                )
+                preview.BackgroundColor3 = currentColor
+                if options.ColorCallback then
+                    pcall(options.ColorCallback, currentColor)
+                end
+                svButton.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+                svCursor.Position = UDim2.new(sat, 0, 1 - val, 0)
+                hueCursor.Position = UDim2.new(0.5, 0, hue, 0)
+                hexBox.Text = string.format("#%02X%02X%02X", math.floor(
+                                                currentColor.R * 255 + 0.5),
+                                            math.floor(
+                                                currentColor.G * 255 + 0.5),
+                                            math.floor(
+                                                currentColor.B * 255 + 0.5))
             end
 
             local function updateSV(input)
                 local size = svButton.AbsoluteSize
                 if size.X <= 0 or size.Y <= 0 then return end
-                sat = Clamp01((input.Position.X - svButton.AbsolutePosition.X) / size.X)
-                val = 1 - Clamp01((input.Position.Y - svButton.AbsolutePosition.Y) / size.Y)
+                sat = Clamp01((input.Position.X - svButton.AbsolutePosition.X) /
+                                  size.X)
+                val = 1 -
+                          Clamp01(
+                              (input.Position.Y - svButton.AbsolutePosition.Y) /
+                                  size.Y)
                 applyColor()
             end
 
             local function updateHue(input)
                 local size = hueButton.AbsoluteSize
                 if size.Y <= 0 then return end
-                hue = Clamp01((input.Position.Y - hueButton.AbsolutePosition.Y) / size.Y)
+                hue = Clamp01(
+                          (input.Position.Y - hueButton.AbsolutePosition.Y) /
+                              size.Y)
                 applyColor()
             end
 
@@ -1108,14 +1205,16 @@ function NovaUI:AddPage(name, icon)
             end)
 
             UIS.InputChanged:Connect(function(input)
-                if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-                if draggingSV  then updateSV(input)  end
+                if input.UserInputType ~= Enum.UserInputType.MouseMovement then
+                    return
+                end
+                if draggingSV then updateSV(input) end
                 if draggingHue then updateHue(input) end
             end)
 
             UIS.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    draggingSV  = false
+                    draggingSV = false
                     draggingHue = false
                 end
             end)
@@ -1127,34 +1226,41 @@ function NovaUI:AddPage(name, icon)
                     ui.ActiveColorPicker.Visible = false
                 end
                 if popup.Visible then
-                    popup.Visible          = false
-                    ui.ActiveColorPicker   = nil
-                    ui.ActiveColorButton   = nil
+                    popup.Visible = false
+                    ui.ActiveColorPicker = nil
+                    ui.ActiveColorButton = nil
                     return
                 end
                 ui.ActiveColorPicker = popup
                 ui.ActiveColorButton = colorButton
 
-                local camera   = workspace.CurrentCamera
-                local viewport = camera and camera.ViewportSize or Vector2.new(800, 600)
-                local bPos     = colorButton.AbsolutePosition
-                local bSize    = colorButton.AbsoluteSize
-                local pSize    = popup.AbsoluteSize
-                if pSize.X <= 0 or pSize.Y <= 0 then pSize = Vector2.new(230, 245) end
+                local camera = workspace.CurrentCamera
+                local viewport = camera and camera.ViewportSize or
+                                     Vector2.new(800, 600)
+                local bPos = colorButton.AbsolutePosition
+                local bSize = colorButton.AbsoluteSize
+                local pSize = popup.AbsoluteSize
+                if pSize.X <= 0 or pSize.Y <= 0 then
+                    pSize = Vector2.new(230, 245)
+                end
 
                 local x = bPos.X
                 local y = bPos.Y + bSize.Y + 5
-                if x + pSize.X > viewport.X - 5 then x = viewport.X - pSize.X - 5 end
+                if x + pSize.X > viewport.X - 5 then
+                    x = viewport.X - pSize.X - 5
+                end
                 if x < 5 then x = 5 end
-                if y + pSize.Y > viewport.Y - 5 then y = bPos.Y - pSize.Y - 5 end
+                if y + pSize.Y > viewport.Y - 5 then
+                    y = bPos.Y - pSize.Y - 5
+                end
                 if y < 5 then y = 5 end
 
                 popup.Position = UDim2.fromOffset(math.floor(x), math.floor(y))
-                popup.Visible  = true
-                popup.ZIndex   = 1000
+                popup.Visible = true
+                popup.ZIndex = 1000
                 applyColor()
             end)
-        end  -- end if colorEnabled
+        end -- end if colorEnabled
 
         -- ============================================================
         -- KEYBIND (FIX: removed duplicate block — was copy-pasted twice)
@@ -1162,29 +1268,29 @@ function NovaUI:AddPage(name, icon)
         if bindEnabled then
             local bindX = colorEnabled and -89 or -66
             local bindButton = New("TextButton", {
-                Parent          = holder,
-                Size            = UDim2.fromOffset(34, 20),
-                Position        = UDim2.new(1, bindX, 0.5, -10),
+                Parent = holder,
+                Size = UDim2.fromOffset(34, 20),
+                Position = UDim2.new(1, bindX, 0.5, -10),
                 BackgroundColor3 = C.Element,
                 BorderSizePixel = 0,
-                Text            = "None",
-                TextColor3      = C.SubText,
-                TextSize        = 8,
-                Font            = Enum.Font.GothamMedium,
+                Text = "None",
+                TextColor3 = C.SubText,
+                TextSize = 8,
+                Font = Enum.Font.GothamMedium,
                 AutoButtonColor = false,
-                TextTruncate    = Enum.TextTruncate.AtEnd,
-                ZIndex          = 15
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                ZIndex = 15
             })
             Corner(bindButton, 4)
             Stroke(bindButton)
 
             -- AUTO-REGISTER ke KeybindList (pakai nama toggle ini)
-            kbEntry = { displayName = text, code = nil, on = enabled }
+            kbEntry = {displayName = text, code = nil, on = enabled}
             KeybindList.AddEntry(kbEntry)
 
             local function syncEntry()
                 kbEntry.code = currentKey
-                kbEntry.on   = enabled
+                kbEntry.on = enabled
                 if KeybindListWindow.Frame and KeybindListWindow.Frame.Visible then
                     KeybindListWindow.RefreshList()
                 end
@@ -1195,12 +1301,12 @@ function NovaUI:AddPage(name, icon)
                 recording = false
                 KeybindList.StopRecording()
                 if currentKey then
-                    bindButton.Text       = currentKey.Name
-                    bindButton.TextSize   = 8
+                    bindButton.Text = currentKey.Name
+                    bindButton.TextSize = 8
                     bindButton.TextColor3 = C.Text
                 else
-                    bindButton.Text       = "None"
-                    bindButton.TextSize   = 8
+                    bindButton.Text = "None"
+                    bindButton.TextSize = 8
                     bindButton.TextColor3 = C.SubText
                 end
             end
@@ -1215,7 +1321,7 @@ function NovaUI:AddPage(name, icon)
                 recording = true
                 KeybindList.CancelActive = cancelRecording
                 KeybindList.StartRecording()
-                bindButton.Text     = "Press key..."
+                bindButton.Text = "Press key..."
                 bindButton.TextSize = 7
                 bindButton.TextColor3 = C.Text
             end)
@@ -1223,9 +1329,9 @@ function NovaUI:AddPage(name, icon)
             UIS.InputBegan:Connect(function(input, gameProcessed)
                 if recording then
                     if input.KeyCode == Enum.KeyCode.Backspace then
-                        currentKey            = nil
-                        bindButton.Text       = "None"
-                        bindButton.TextSize   = 8
+                        currentKey = nil
+                        bindButton.Text = "None"
+                        bindButton.TextSize = 8
                         bindButton.TextColor3 = C.SubText
                         recording = false
                         KeybindList.StopRecording()
@@ -1237,29 +1343,30 @@ function NovaUI:AddPage(name, icon)
                         -- Cek: key sudah dipakai toggle lain? -> tolak, suruh pakai key lain
                         local taken = false
                         for _, info in ipairs(KeybindList._config) do
-                            if info ~= kbEntry and info.code ~= nil and info.code == input.KeyCode then
+                            if info ~= kbEntry and info.code ~= nil and
+                                info.code == input.KeyCode then
                                 taken = true
                                 break
                             end
                         end
                         if taken then
-                            bindButton.Text       = "Key dipakai!"
-                            bindButton.TextSize   = 6
+                            bindButton.Text = "Key dipakai!"
+                            bindButton.TextSize = 6
                             bindButton.TextColor3 = Color3.fromRGB(230, 65, 85)
                             -- tetap mode recording -> langsung tekan key lain
                             task.delay(0.6, function()
                                 if recording then
-                                    bindButton.Text       = "Press key..."
-                                    bindButton.TextSize   = 7
+                                    bindButton.Text = "Press key..."
+                                    bindButton.TextSize = 7
                                     bindButton.TextColor3 = C.Text
                                 end
                             end)
                             return
                         end
 
-                        currentKey            = input.KeyCode
-                        bindButton.Text       = currentKey.Name
-                        bindButton.TextSize   = 8
+                        currentKey = input.KeyCode
+                        bindButton.Text = currentKey.Name
+                        bindButton.TextSize = 8
                         bindButton.TextColor3 = C.Text
                         recording = false
                         KeybindList.StopRecording()
@@ -1269,12 +1376,13 @@ function NovaUI:AddPage(name, icon)
                     return
                 end
                 -- hotkey tidak aktif selama ada toggle lain yang sedang merekam key
-                if KeybindList._recording == 0 and not gameProcessed and currentKey and input.KeyCode == currentKey then
+                if KeybindList._recording == 0 and not gameProcessed and
+                    currentKey and input.KeyCode == currentKey then
                     enabled = not enabled
                     refreshToggle()
                 end
             end)
-        end  -- end if bindEnabled
+        end -- end if bindEnabled
 
         -- ============================================================
         -- SHEET DALAM TOGGLE (opsi: sheet = true)
@@ -1284,53 +1392,55 @@ function NovaUI:AddPage(name, icon)
         -- ============================================================
         local subSheet = nil
         if options.sheet == true then
-            local TWEEN_OPEN  = TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-            local TWEEN_CLOSE = TweenInfo.new(0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+            local TWEEN_OPEN = TweenInfo.new(0.28, Enum.EasingStyle.Quint,
+                                             Enum.EasingDirection.Out)
+            local TWEEN_CLOSE = TweenInfo.new(0.20, Enum.EasingStyle.Quint,
+                                              Enum.EasingDirection.In)
 
             -- panah ">" di kiri nama toggle
             local sheetArrow = New("TextButton", {
-                Parent          = holder,
-                Size            = UDim2.fromOffset(14, 20),
-                Position        = UDim2.new(0, 0, 0.5, -10),
+                Parent = holder,
+                Size = UDim2.fromOffset(14, 20),
+                Position = UDim2.new(0, 0, 0.5, -10),
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
-                Text            = ">",
-                TextColor3      = C.SubText,
-                TextSize        = 11,
-                Font            = Enum.Font.GothamBold,
+                Text = ">",
+                TextColor3 = C.SubText,
+                TextSize = 11,
+                Font = Enum.Font.GothamBold,
                 AutoButtonColor = false,
-                ZIndex          = 15
+                ZIndex = 15
             })
 
             -- geser nama toggle ke kanan biar tidak ketiban panah
             label.Position = UDim2.fromOffset(16)
-            label.Size     = UDim2.new(1, -136, 1, 0)
+            label.Size = UDim2.new(1, -136, 1, 0)
             -- +186 = 166 + 20 indentasi tambahan (toggle bersheet di dalam sheet)
             ui:EnsureWidth(EstTextWidth(text, 7) + 186)
 
             local subBody = New("Frame", {
-                Parent                 = page.Frame,
-                Size                   = UDim2.new(1, 0, 0, 0),
+                Parent = page.Frame,
+                Size = UDim2.new(1, 0, 0, 0),
                 BackgroundTransparency = 1,
-                BorderSizePixel        = 0,
-                ClipsDescendants       = true,
-                Visible                = false,
-                ZIndex                 = 13
+                BorderSizePixel = 0,
+                ClipsDescendants = true,
+                Visible = false,
+                ZIndex = 13
             })
 
             local subPad = Instance.new("UIPadding")
             subPad.PaddingLeft = UDim.new(0, 20)
-            subPad.PaddingTop  = UDim.new(0, 3)
-            subPad.Parent      = subBody
+            subPad.PaddingTop = UDim.new(0, 3)
+            subPad.Parent = subBody
 
             local subList = Instance.new("UIListLayout")
             subList.SortOrder = Enum.SortOrder.LayoutOrder
-            subList.Padding   = UDim.new(0, 3)
-            subList.Parent    = subBody
+            subList.Padding = UDim.new(0, 3)
+            subList.Parent = subBody
 
             local itemCount = 0
 
-            subSheet = { Count = 0, IsOpen = false }
+            subSheet = {Count = 0, IsOpen = false}
             subSheet.Body = subBody
 
             -- sinkron: subBody mengikuti parent & urutan holder
@@ -1357,33 +1467,36 @@ function NovaUI:AddPage(name, icon)
 
             -- AUTO-RESIZE: isi sub-sheet berubah (mis. ada sheet bersarang
             -- yang expand) -> tinggi subBody ikut menyesuaikan
-            subList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                if subSheet.IsOpen then
-                    local h = subHeight()
-                    TweenService:Create(subBody,
-                        TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-                        { Size = UDim2.new(1, 0, 0, h) }
-                    ):Play()
-                end
-            end)
+            subList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(
+                function()
+                    if subSheet.IsOpen then
+                        local h = subHeight()
+                        TweenService:Create(subBody, TweenInfo.new(0.15,
+                                                                   Enum.EasingStyle
+                                                                       .Quint,
+                                                                   Enum.EasingDirection
+                                                                       .Out),
+                                            {Size = UDim2.new(1, 0, 0, h)})
+                            :Play()
+                    end
+                end)
 
             local function applyLayout(animate)
-                if subSheet.IsOpen then
-                    subBody.Visible = true
-                end
-                local h    = subSheet.IsOpen and subHeight() or 0
+                if subSheet.IsOpen then subBody.Visible = true end
+                local h = subSheet.IsOpen and subHeight() or 0
                 local info = subSheet.IsOpen and TWEEN_OPEN or TWEEN_CLOSE
 
                 if not animate then
-                    subBody.Size    = UDim2.new(1, 0, 0, h)
+                    subBody.Size = UDim2.new(1, 0, 0, h)
                     subBody.Visible = subSheet.IsOpen
                     return
                 end
 
-                local t = TweenService:Create(subBody, info, { Size = UDim2.new(1, 0, 0, h) })
+                local t = TweenService:Create(subBody, info,
+                                              {Size = UDim2.new(1, 0, 0, h)})
                 t:Play()
                 TweenService:Create(sheetArrow, info, {
-                    Rotation  = subSheet.IsOpen and 90 or 0,
+                    Rotation = subSheet.IsOpen and 90 or 0,
                     TextColor3 = subSheet.IsOpen and C.Text or C.SubText
                 }):Play()
                 if not subSheet.IsOpen then
@@ -1443,9 +1556,7 @@ function NovaUI:AddPage(name, icon)
                 applyLayout(true)
             end
 
-            function subSheet:Destroy()
-                subBody:Destroy()
-            end
+            function subSheet:Destroy() subBody:Destroy() end
 
             -- klik ">" untuk buka / tutup isi (terpisah dari state toggle)
             sheetArrow.MouseButton1Click:Connect(function()
@@ -1469,12 +1580,8 @@ function NovaUI:AddPage(name, icon)
                 enabled = state == true
                 refreshToggle()
             end,
-            Get = function()
-                return enabled
-            end,
-            GetKey = function()
-                return currentKey
-            end,
+            Get = function() return enabled end,
+            GetKey = function() return currentKey end,
             SetColor = function(_, color)
                 if typeof(color) ~= "Color3" then return end
                 currentColor = color
@@ -1485,11 +1592,9 @@ function NovaUI:AddPage(name, icon)
                     applyColor()
                 end
             end,
-            GetColor = function()
-                return currentColor
-            end,
+            GetColor = function() return currentColor end,
             Holder = holder,
-            Sheet  = subSheet -- opsi sheet = true -> Sub:Sheet:AddToggle/AddSlider dll
+            Sheet = subSheet -- opsi sheet = true -> Sub:Sheet:AddToggle/AddSlider dll
         }
     end
 
@@ -1501,50 +1606,54 @@ function NovaUI:AddPage(name, icon)
         ui:EnsureWidth(EstTextWidth(text, 6) + 170)
 
         local holder = New("Frame", {
-            Parent          = page.Frame,
-            Size            = UDim2.new(1, 0, 0, 25),
+            Parent = page.Frame,
+            Size = UDim2.new(1, 0, 0, 25),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            ZIndex          = 13
+            ZIndex = 13
         })
 
         -- label kiri
         local label = New("TextButton", {
-            Parent             = holder,
-            Size               = UDim2.new(1, -108, 1, 0),
+            Parent = holder,
+            Size = UDim2.new(1, -108, 1, 0),
             BackgroundTransparency = 1,
-            Text               = text,
-            TextColor3         = C.Text,
-            TextSize           = 10,
-            Font               = Enum.Font.GothamMedium,
-            TextXAlignment     = Enum.TextXAlignment.Left,
-            TextYAlignment     = Enum.TextYAlignment.Center,
-            AutoButtonColor    = false,
-            ZIndex             = 14
+            Text = text,
+            TextColor3 = C.Text,
+            TextSize = 10,
+            Font = Enum.Font.GothamMedium,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Center,
+            AutoButtonColor = false,
+            ZIndex = 14
         })
 
         -- tombol lonjong di kanan  ( button        [button] )
         local button = New("TextButton", {
-            Parent          = holder,
-            AnchorPoint     = Vector2.new(1, 0.5),
-            Position        = UDim2.new(1, -4, 0.5, 0),
-            Size            = UDim2.fromOffset(96, 22),
+            Parent = holder,
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, -4, 0.5, 0),
+            Size = UDim2.fromOffset(96, 22),
             BackgroundColor3 = C.Element,
             BorderSizePixel = 0,
-            Text            = text,
-            TextColor3      = C.Text,
-            TextSize        = 10,
-            Font            = Enum.Font.GothamMedium,
-            TextTruncate    = Enum.TextTruncate.AtEnd,
+            Text = text,
+            TextColor3 = C.Text,
+            TextSize = 10,
+            Font = Enum.Font.GothamMedium,
+            TextTruncate = Enum.TextTruncate.AtEnd,
             AutoButtonColor = false,
-            ZIndex          = 14
+            ZIndex = 14
         })
         Corner(button, 4) -- balok
         Stroke(button)
 
         -- hover
-        button.MouseEnter:Connect(function()  button.BackgroundColor3 = C.ElementHover end)
-        button.MouseLeave:Connect(function()  button.BackgroundColor3 = C.Element      end)
+        button.MouseEnter:Connect(function()
+            button.BackgroundColor3 = C.ElementHover
+        end)
+        button.MouseLeave:Connect(function()
+            button.BackgroundColor3 = C.Element
+        end)
 
         -- klik di label atau di tombol sama-sama jalan
         label.MouseButton1Click:Connect(function()
@@ -1564,86 +1673,89 @@ function NovaUI:AddPage(name, icon)
         local value = math.clamp(default or min, min, max)
 
         local holder = New("Frame", {
-            Parent             = page.Frame,
-            Size               = UDim2.new(1, 0, 0, 25),
+            Parent = page.Frame,
+            Size = UDim2.new(1, 0, 0, 25),
             BackgroundTransparency = 1,
-            ZIndex             = 14
+            ZIndex = 14
         })
 
         New("TextLabel", {
-            Parent             = holder,
-            Size               = UDim2.new(1, -112, 1, 0), -- sisa ruang untuk valuebox + slider
+            Parent = holder,
+            Size = UDim2.new(1, -112, 1, 0), -- sisa ruang untuk valuebox + slider
             BackgroundTransparency = 1,
-            Text               = text,
-            TextColor3         = C.Text,
-            TextSize           = 10,
-            Font               = Enum.Font.GothamMedium,
-            TextXAlignment     = Enum.TextXAlignment.Left,
-            TextYAlignment     = Enum.TextYAlignment.Center,
-            ZIndex             = 15
+            Text = text,
+            TextColor3 = C.Text,
+            TextSize = 10,
+            Font = Enum.Font.GothamMedium,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Center,
+            ZIndex = 15
         })
 
         ui:EnsureWidth(EstTextWidth(text, 6) + 170)
 
         local valueBox = New("TextBox", {
-            Parent             = holder,
-            AnchorPoint        = Vector2.new(1, 0.5),
-            Position           = UDim2.new(1, -74, 0.5, 0),
-            Size               = UDim2.fromOffset(30, 18),
-            BackgroundColor3   = C.Element,
-            Text               = tostring(value),
-            TextColor3         = C.SubText,
-            TextSize           = 8,
-            Font               = Enum.Font.Gotham,
-            TextXAlignment     = Enum.TextXAlignment.Center,
-            TextYAlignment     = Enum.TextYAlignment.Center,
-            ClearTextOnFocus   = false,
-            ZIndex             = 15
+            Parent = holder,
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, -74, 0.5, 0),
+            Size = UDim2.fromOffset(30, 18),
+            BackgroundColor3 = C.Element,
+            Text = tostring(value),
+            TextColor3 = C.SubText,
+            TextSize = 8,
+            Font = Enum.Font.Gotham,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextYAlignment = Enum.TextYAlignment.Center,
+            ClearTextOnFocus = false,
+            ZIndex = 15
         })
         Corner(valueBox, 4)
         Stroke(valueBox)
 
         local bg = New("Frame", {
-            Parent           = holder,
-            AnchorPoint      = Vector2.new(1, 0.5),
-            Position         = UDim2.new(1, -4, 0.5, 0),
-            Size             = UDim2.fromOffset(60, 6),
+            Parent = holder,
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, -4, 0.5, 0),
+            Size = UDim2.fromOffset(60, 6),
             BackgroundColor3 = Color3.fromRGB(40, 36, 40),
-            ZIndex           = 14
+            ZIndex = 14
         })
         Corner(bg, 6)
 
         -- fill slider: warna ACCENT (ikut theme)
         local fill = New("Frame", {
-            Parent           = bg,
-            Size             = UDim2.new((value - min) / (max - min), 0, 1, 0),
+            Parent = bg,
+            Size = UDim2.new((value - min) / (max - min), 0, 1, 0),
             BackgroundColor3 = C.Accent,
-            ZIndex           = 15
+            ZIndex = 15
         })
         Corner(fill, 6)
 
         -- knob bulatan di ujung fill slider ( ----o ) — warna ACCENT
         local knob = New("Frame", {
-            Parent           = bg,
-            AnchorPoint      = Vector2.new(1, 0.5),
-            Position         = UDim2.new((value - min) / (max - min), 0, 0.5, 0),
-            Size             = UDim2.fromOffset(12, 12),
+            Parent = bg,
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new((value - min) / (max - min), 0, 0.5, 0),
+            Size = UDim2.fromOffset(12, 12),
             BackgroundColor3 = C.Accent,
-            BorderSizePixel  = 0,
-            ZIndex           = 16
+            BorderSizePixel = 0,
+            ZIndex = 16
         })
         Corner(knob, 6)
 
         local knobStroke = Instance.new("UIStroke")
-        knobStroke.Color    = C.Background
+        knobStroke.Color = C.Background
         knobStroke.Thickness = 2
-        knobStroke.Parent   = knob
+        knobStroke.Parent = knob
 
         local draggingSlider = false
 
         local function setValue(v, fire)
             v = tonumber(v)
-            if not v then valueBox.Text = tostring(value); return end
+            if not v then
+                valueBox.Text = tostring(value);
+                return
+            end
             value = math.clamp(v, min, max)
             if min % 1 == 0 and max % 1 == 0 then
                 value = math.floor(value + 0.5)
@@ -1657,7 +1769,8 @@ function NovaUI:AddPage(name, icon)
         local function slide(input)
             local size = bg.AbsoluteSize.X
             if size <= 0 then return end
-            local pos = Clamp01((input.Position.X - bg.AbsolutePosition.X) / size)
+            local pos = Clamp01((input.Position.X - bg.AbsolutePosition.X) /
+                                    size)
             setValue(min + pos * (max - min), true)
         end
 
@@ -1681,9 +1794,8 @@ function NovaUI:AddPage(name, icon)
         end)
 
         UIS.InputChanged:Connect(function(input)
-            if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
-                slide(input)
-            end
+            if draggingSlider and input.UserInputType ==
+                Enum.UserInputType.MouseMovement then slide(input) end
         end)
 
         UIS.InputEnded:Connect(function(input)
@@ -1702,7 +1814,7 @@ function NovaUI:AddPage(name, icon)
 
         return {
             Set = function(_, v) setValue(v, false) end,
-            Get = function()    return value        end,
+            Get = function() return value end,
             Holder = holder
         }
     end
@@ -1718,50 +1830,50 @@ function NovaUI:AddPage(name, icon)
     function page:AddDropdown(text, options)
         options = options or {}
 
-        local choices  = options.Options or options.options or {}
-        local current  = options.Default or options.default or choices[1] or ""
+        local choices = options.Options or options.options or {}
+        local current = options.Default or options.default or choices[1] or ""
         local callback = options.Callback or options.callback
-        local open     = false
+        local open = false
 
         local holder = New("Frame", {
-            Parent          = page.Frame,
-            Size            = UDim2.new(1, 0, 0, 25),
+            Parent = page.Frame,
+            Size = UDim2.new(1, 0, 0, 25),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            ZIndex          = 13
+            ZIndex = 13
         })
 
         -- Anti-tabrakan: window melebar kalau nama dropdown panjang
         ui:EnsureWidth(EstTextWidth(text, 6) + 180)
 
         local label = New("TextLabel", {
-            Parent             = holder,
-            Size               = UDim2.new(1, -130, 1, 0),
+            Parent = holder,
+            Size = UDim2.new(1, -130, 1, 0),
             BackgroundTransparency = 1,
-            Text               = text,
-            TextColor3         = C.Text,
-            TextSize           = 12,
-            Font               = Enum.Font.GothamMedium,
-            TextXAlignment     = Enum.TextXAlignment.Left,
-            TextYAlignment     = Enum.TextYAlignment.Center,
-            ZIndex             = 14
+            Text = text,
+            TextColor3 = C.Text,
+            TextSize = 12,
+            Font = Enum.Font.GothamMedium,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Center,
+            ZIndex = 14
         })
 
         local DD_W = 120
         local ddButton = New("TextButton", {
-            Parent          = holder,
-            AnchorPoint     = Vector2.new(1, 0.5),
-            Position        = UDim2.new(1, -4, 0.5, 0),
-            Size            = UDim2.fromOffset(DD_W, 20),
+            Parent = holder,
+            AnchorPoint = Vector2.new(1, 0.5),
+            Position = UDim2.new(1, -4, 0.5, 0),
+            Size = UDim2.fromOffset(DD_W, 20),
             BackgroundColor3 = C.Element,
             BorderSizePixel = 0,
-            Text            = tostring(current) .. "  ▼",
-            TextColor3      = C.Text,
-            TextSize        = 9,
-            Font            = Enum.Font.GothamMedium,
+            Text = tostring(current) .. "  ▼",
+            TextColor3 = C.Text,
+            TextSize = 9,
+            Font = Enum.Font.GothamMedium,
             AutoButtonColor = false,
-            TextTruncate    = Enum.TextTruncate.AtEnd,
-            ZIndex          = 15
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            ZIndex = 15
         })
         Corner(ddButton, 4)
         Stroke(ddButton)
@@ -1769,20 +1881,18 @@ function NovaUI:AddPage(name, icon)
         -- popup list di ui.Content supaya tidak terpotong ScrollingFrame;
         -- posisi dihitung dari AbsolutePosition
         local popup = New("Frame", {
-            Parent           = ui.Content,
-            Size             = UDim2.fromOffset(DD_W, 0),
+            Parent = ui.Content,
+            Size = UDim2.fromOffset(DD_W, 0),
             BackgroundColor3 = C.Background,
-            BorderSizePixel  = 0,
-            Visible          = false,
+            BorderSizePixel = 0,
+            Visible = false,
             ClipsDescendants = true,
-            ZIndex           = 900
+            ZIndex = 900
         })
         Corner(popup, 4)
         Stroke(popup)
 
-        local function popHeight()
-            return #choices * 16 + 6
-        end
+        local function popHeight() return #choices * 16 + 6 end
 
         local function setSelected(v, fire)
             current = v
@@ -1798,21 +1908,21 @@ function NovaUI:AddPage(name, icon)
             end
             for i, choice in ipairs(choices) do
                 local opt = New("TextButton", {
-                    Parent          = popup,
-                    Position        = UDim2.new(0, 4, 0, (i - 1) * 16 + 3),
-                    Size            = UDim2.new(1, -8, 0, 16),
+                    Parent = popup,
+                    Position = UDim2.new(0, 4, 0, (i - 1) * 16 + 3),
+                    Size = UDim2.new(1, -8, 0, 16),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-                    Text            = tostring(choice),
-                    TextColor3      = (choice == current) and C.Accent or C.Text,
-                    TextSize        = 9,
-                    Font            = Enum.Font.GothamMedium,
-                    TextXAlignment  = Enum.TextXAlignment.Left,
+                    Text = tostring(choice),
+                    TextColor3 = (choice == current) and C.Accent or C.Text,
+                    TextSize = 9,
+                    Font = Enum.Font.GothamMedium,
+                    TextXAlignment = Enum.TextXAlignment.Left,
                     AutoButtonColor = false,
-                    ZIndex          = 901
+                    ZIndex = 901
                 })
                 opt.MouseEnter:Connect(function()
-                    opt.BackgroundColor3   = C.ElementHover
+                    opt.BackgroundColor3 = C.ElementHover
                     opt.BackgroundTransparency = 0
                 end)
                 opt.MouseLeave:Connect(function()
@@ -1820,32 +1930,35 @@ function NovaUI:AddPage(name, icon)
                 end)
                 opt.MouseButton1Click:Connect(function()
                     setSelected(choice, true) -- pilih 1 opsi -> ganti value + callback
-                    setOpen(false)            -- otomatis tutup
+                    setOpen(false) -- otomatis tutup
                 end)
             end
         end
 
         local function positionPopup()
             local cam = workspace.CurrentCamera
-            local vp  = cam and cam.ViewportSize or Vector2.new(800, 600)
+            local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
             local rel = ddButton.AbsolutePosition - ui.Content.AbsolutePosition
-            local ph  = popHeight()
+            local ph = popHeight()
 
             local x = rel.X + ddButton.AbsoluteSize.X - DD_W -- rata kanan dengan tombol
-            local y = rel.Y + ddButton.AbsoluteSize.Y + 4    -- tepat di bawah tombol
+            local y = rel.Y + ddButton.AbsoluteSize.Y + 4 -- tepat di bawah tombol
 
             -- kalau mepet bawah layar, buka ke atas supaya tidak terpotong
-            local absBottom = ddButton.AbsolutePosition.Y + ddButton.AbsoluteSize.Y + 4 + ph
+            local absBottom = ddButton.AbsolutePosition.Y +
+                                  ddButton.AbsoluteSize.Y + 4 + ph
             if absBottom > vp.Y - 6 then
                 y = math.max(0, rel.Y - ph - 4)
             end
 
-            popup.Position = UDim2.fromOffset(math.max(0, math.floor(x)), math.floor(y))
+            popup.Position = UDim2.fromOffset(math.max(0, math.floor(x)),
+                                              math.floor(y))
         end
 
         function setOpen(v, animate)
             open = v
-            ddButton.Text = tostring(current) .. "  " .. (open and "▲" or "▼")
+            ddButton.Text = tostring(current) .. "  " ..
+                                (open and "▲" or "▼")
             if open then
                 buildOptions()
                 positionPopup()
@@ -1854,16 +1967,22 @@ function NovaUI:AddPage(name, icon)
                     popup.Size = UDim2.fromOffset(DD_W, popHeight())
                 else
                     popup.Size = UDim2.fromOffset(DD_W, 0)
-                    TweenService:Create(popup,
-                        TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-                        { Size = UDim2.fromOffset(DD_W, popHeight()) }
-                    ):Play()
+                    TweenService:Create(popup, TweenInfo.new(0.15,
+                                                             Enum.EasingStyle
+                                                                 .Quint,
+                                                             Enum.EasingDirection
+                                                                 .Out), {
+                        Size = UDim2.fromOffset(DD_W, popHeight())
+                    }):Play()
                 end
             else
-                local t = TweenService:Create(popup,
-                    TweenInfo.new(0.12, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
-                    { Size = UDim2.fromOffset(DD_W, 0) }
-                )
+                local t = TweenService:Create(popup, TweenInfo.new(0.12,
+                                                                   Enum.EasingStyle
+                                                                       .Quint,
+                                                                   Enum.EasingDirection
+                                                                       .In), {
+                    Size = UDim2.fromOffset(DD_W, 0)
+                })
                 t:Play()
                 t.Completed:Connect(function()
                     if not open then popup.Visible = false end
@@ -1871,24 +1990,24 @@ function NovaUI:AddPage(name, icon)
             end
         end
 
-        ddButton.MouseButton1Click:Connect(function()
-            setOpen(not open)
-        end)
+        ddButton.MouseButton1Click:Connect(function() setOpen(not open) end)
 
         -- klik di luar popup / tombol -> tutup
         UIS.InputBegan:Connect(function(input, gp)
             if not open or gp then return end
-            if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+            if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+                return
+            end
 
-            local p  = input.Position
+            local p = input.Position
             local pp, ps = popup.AbsolutePosition, popup.AbsoluteSize
             local bp, bs = ddButton.AbsolutePosition, ddButton.AbsoluteSize
 
-            local inPop = p.X >= pp.X and p.X <= pp.X + ps.X and p.Y >= pp.Y and p.Y <= pp.Y + ps.Y
-            local inBtn = p.X >= bp.X and p.X <= bp.X + bs.X and p.Y >= bp.Y and p.Y <= bp.Y + bs.Y
-            if not inPop and not inBtn then
-                setOpen(false)
-            end
+            local inPop = p.X >= pp.X and p.X <= pp.X + ps.X and p.Y >= pp.Y and
+                              p.Y <= pp.Y + ps.Y
+            local inBtn = p.X >= bp.X and p.X <= bp.X + bs.X and p.Y >= bp.Y and
+                              p.Y <= bp.Y + bs.Y
+            if not inPop and not inBtn then setOpen(false) end
         end)
 
         -- daftarkan ke registry config (untuk Save/Load Configuration)
@@ -1902,10 +2021,13 @@ function NovaUI:AddPage(name, icon)
         return {
             Set = function(_, v)
                 for _, c in ipairs(choices) do
-                    if c == v then setSelected(v, false) return end
+                    if c == v then
+                        setSelected(v, false)
+                        return
+                    end
                 end
             end,
-            Get    = function() return current end,
+            Get = function() return current end,
             Holder = holder
         }
     end
@@ -1919,133 +2041,140 @@ function NovaUI:AddPage(name, icon)
         options = options or {}
 
         local sheet = {}
-        sheet.Name   = name or "Sheet"
+        sheet.Name = name or "Sheet"
         sheet.IsOpen = options.open == true
-        sheet.Count  = 0
+        sheet.Count = 0
 
-        local HEADER_H    = 22
-        local TWEEN_OPEN  = TweenInfo.new(options.animTime or 0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-        local TWEEN_CLOSE = TweenInfo.new(options.animTime or 0.20, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+        local HEADER_H = 22
+        local TWEEN_OPEN = TweenInfo.new(options.animTime or 0.28,
+                                         Enum.EasingStyle.Quint,
+                                         Enum.EasingDirection.Out)
+        local TWEEN_CLOSE = TweenInfo.new(options.animTime or 0.20,
+                                          Enum.EasingStyle.Quint,
+                                          Enum.EasingDirection.In)
 
         -- wrapper: item di list page, tingginya di-tween supaya elemen bawahnya ikut bergeser
         local wrapper = New("Frame", {
-            Parent                 = page.Frame,
-            Size                   = UDim2.new(1, 0, 0, HEADER_H),
+            Parent = page.Frame,
+            Size = UDim2.new(1, 0, 0, HEADER_H),
             BackgroundTransparency = 1,
-            BorderSizePixel        = 0,
-            ClipsDescendants       = true,
-            ZIndex                 = 13
+            BorderSizePixel = 0,
+            ClipsDescendants = true,
+            ZIndex = 13
         })
         sheet.Holder = wrapper
 
         -- ---------- header: tombol >  +  nama lembar ----------
         local header = New("TextButton", {
-            Parent           = wrapper,
-            Size             = UDim2.new(1, 0, 0, HEADER_H),
+            Parent = wrapper,
+            Size = UDim2.new(1, 0, 0, HEADER_H),
             BackgroundColor3 = C.Element,
-            BorderSizePixel  = 0,
-            Text             = "",
-            AutoButtonColor  = false,
-            ZIndex           = 14
+            BorderSizePixel = 0,
+            Text = "",
+            AutoButtonColor = false,
+            ZIndex = 14
         })
         Corner(header, 4)
         Stroke(header)
 
         local arrow = New("TextLabel", {
-            Parent                 = header,
-            Size                   = UDim2.fromOffset(HEADER_H, HEADER_H),
+            Parent = header,
+            Size = UDim2.fromOffset(HEADER_H, HEADER_H),
             BackgroundTransparency = 1,
-            Text                   = ">",
-            TextColor3             = C.Text,
-            TextSize               = 11,
-            Font                   = Enum.Font.GothamBold,
-            TextXAlignment         = Enum.TextXAlignment.Center,
-            TextYAlignment         = Enum.TextYAlignment.Center,
-            ZIndex                 = 15
+            Text = ">",
+            TextColor3 = C.Text,
+            TextSize = 11,
+            Font = Enum.Font.GothamBold,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextYAlignment = Enum.TextYAlignment.Center,
+            ZIndex = 15
         })
 
         local headerLabel = New("TextLabel", {
-            Parent                 = header,
-            Size                   = UDim2.new(1, -(HEADER_H + 8), 1, 0),
-            Position               = UDim2.fromOffset(HEADER_H + 2, 0),
+            Parent = header,
+            Size = UDim2.new(1, -(HEADER_H + 8), 1, 0),
+            Position = UDim2.fromOffset(HEADER_H + 2, 0),
             BackgroundTransparency = 1,
-            Text                   = sheet.Name,
-            TextColor3             = C.Text,
-            TextSize               = 10,
-            Font                   = Enum.Font.GothamMedium,
-            TextXAlignment         = Enum.TextXAlignment.Left,
-            ZIndex                 = 15
+            Text = sheet.Name,
+            TextColor3 = C.Text,
+            TextSize = 10,
+            Font = Enum.Font.GothamMedium,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 15
         })
 
         ui:EnsureWidth(14 + HEADER_H + 8 + EstTextWidth(sheet.Name, 6))
 
         -- ---------- body: list elemen (diindent, tidak sejajar nama lembar) ----------
         local body = New("Frame", {
-            Parent                 = wrapper,
-            Position               = UDim2.new(0, 0, 0, HEADER_H),
-            Size                   = UDim2.new(1, 0, 0, 0),
+            Parent = wrapper,
+            Position = UDim2.new(0, 0, 0, HEADER_H),
+            Size = UDim2.new(1, 0, 0, 0),
             BackgroundTransparency = 1,
-            BorderSizePixel        = 0,
-            ClipsDescendants       = true,
-            Visible                = sheet.IsOpen,
-            ZIndex                 = 13
+            BorderSizePixel = 0,
+            ClipsDescendants = true,
+            Visible = sheet.IsOpen,
+            ZIndex = 13
         })
         sheet.Body = body
 
         local bodyPad = Instance.new("UIPadding")
         bodyPad.PaddingLeft = UDim.new(0, 20)
-        bodyPad.PaddingTop  = UDim.new(0, 3)
-        bodyPad.Parent      = body
+        bodyPad.PaddingTop = UDim.new(0, 3)
+        bodyPad.Parent = body
 
         local bodyList = Instance.new("UIListLayout")
         bodyList.SortOrder = Enum.SortOrder.LayoutOrder
-        bodyList.Padding   = UDim.new(0, 3)
-        bodyList.Parent    = body
+        bodyList.Padding = UDim.new(0, 3)
+        bodyList.Parent = body
 
         local function bodyHeight()
             local h = bodyList.AbsoluteContentSize.Y
-            if h <= 0 and sheet.Count > 0 then
-                h = sheet.Count * 28
-            end
+            if h <= 0 and sheet.Count > 0 then h = sheet.Count * 28 end
             return h + bodyPad.PaddingTop.Offset
         end
 
         -- AUTO-RESIZE: kalau isi sheet berubah (mis. sub-sheet di dalam
         -- toggle-nya expand), tinggi body + wrapper ikut menyesuaikan
-        bodyList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            if sheet.IsOpen then
-                local h = bodyHeight()
-                local info = TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-                TweenService:Create(body,    info, { Size = UDim2.new(1, 0, 0, h) }):Play()
-                TweenService:Create(wrapper, info, { Size = UDim2.new(1, 0, 0, HEADER_H + h) }):Play()
-            end
-        end)
+        bodyList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(
+            function()
+                if sheet.IsOpen then
+                    local h = bodyHeight()
+                    local info = TweenInfo.new(0.15, Enum.EasingStyle.Quint,
+                                               Enum.EasingDirection.Out)
+                    TweenService:Create(body, info,
+                                        {Size = UDim2.new(1, 0, 0, h)}):Play()
+                    TweenService:Create(wrapper, info, {
+                        Size = UDim2.new(1, 0, 0, HEADER_H + h)
+                    }):Play()
+                end
+            end)
 
         local function applyLayout(animate)
             -- pastikan body kelihatan dulu supaya ukuran kontennya kebaca saat diukur
-            if sheet.IsOpen then
-                body.Visible = true
-            end
+            if sheet.IsOpen then body.Visible = true end
 
-            local h      = (sheet.IsOpen and bodyHeight()) or 0
+            local h = (sheet.IsOpen and bodyHeight()) or 0
             local bodySz = UDim2.new(1, 0, 0, h)
             local wrapSz = UDim2.new(1, 0, 0, HEADER_H + h)
-            local info   = sheet.IsOpen and TWEEN_OPEN or TWEEN_CLOSE
+            local info = sheet.IsOpen and TWEEN_OPEN or TWEEN_CLOSE
 
-            header.BackgroundColor3 = sheet.IsOpen and C.ElementHover or C.Element
+            header.BackgroundColor3 = sheet.IsOpen and C.ElementHover or
+                                          C.Element
 
             if not animate then
-                body.Size      = bodySz
-                wrapper.Size   = wrapSz
+                body.Size = bodySz
+                wrapper.Size = wrapSz
                 arrow.Rotation = sheet.IsOpen and 90 or 0
-                body.Visible   = sheet.IsOpen
+                body.Visible = sheet.IsOpen
                 return
             end
 
-            local bodyTween = TweenService:Create(body, info, { Size = bodySz })
+            local bodyTween = TweenService:Create(body, info, {Size = bodySz})
             bodyTween:Play()
-            TweenService:Create(wrapper, info, { Size = wrapSz }):Play()
-            TweenService:Create(arrow, info, { Rotation = sheet.IsOpen and 90 or 0 }):Play()
+            TweenService:Create(wrapper, info, {Size = wrapSz}):Play()
+            TweenService:Create(arrow, info,
+                                {Rotation = sheet.IsOpen and 90 or 0}):Play()
 
             if not sheet.IsOpen then
                 bodyTween.Completed:Connect(function()
@@ -2073,19 +2202,16 @@ function NovaUI:AddPage(name, icon)
             applyLayout(true)
         end
 
-        function sheet:Destroy()
-            wrapper:Destroy()
-        end
+        function sheet:Destroy() wrapper:Destroy() end
 
         -- ---------- klik tombol > untuk buka / tutup ----------
-        header.MouseButton1Click:Connect(function()
-            sheet:Toggle()
-        end)
+        header.MouseButton1Click:Connect(function() sheet:Toggle() end)
         header.MouseEnter:Connect(function()
             header.BackgroundColor3 = C.ElementHover
         end)
         header.MouseLeave:Connect(function()
-            header.BackgroundColor3 = sheet.IsOpen and C.ElementHover or C.Element
+            header.BackgroundColor3 = sheet.IsOpen and C.ElementHover or
+                                          C.Element
         end)
 
         -- ---------- cara nambah elemen ke dalam lembar ----------
@@ -2159,20 +2285,16 @@ end
 
 function NovaUI:Toggle()
     self.Gui.Enabled = not self.Gui.Enabled
-    if not self.Gui.Enabled then
-        ClosePicker(self)
-    end
+    if not self.Gui.Enabled then ClosePicker(self) end
 end
 
 -- Panggil page Setting: Window:SettingsPage()
-function NovaUI:SettingsPage()
-    return self.SettingPage
-end
+function NovaUI:SettingsPage() return self.SettingPage end
 
 -- ================================================================
 -- KEYBIND LIST (auto: nama + keybind diambil dari toggle)
 -- ================================================================
-KeybindList = { _config = {} }
+KeybindList = {_config = {}}
 KeybindList._recording = 0
 
 function KeybindList.StartRecording()
@@ -2272,18 +2394,14 @@ function KeybindListWindow.Show()
 end
 
 function KeybindListWindow.Hide()
-    if KeybindListWindow.Frame then
-        KeybindListWindow.Frame.Visible = false
-    end
+    if KeybindListWindow.Frame then KeybindListWindow.Frame.Visible = false end
 end
 
 function KeybindListWindow.RefreshList()
     if not KeybindListWindow.List then return end
 
     for _, child in pairs(KeybindListWindow.List:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
+        if child:IsA("Frame") then child:Destroy() end
     end
     KeybindListWindow.Rows = {}
 
@@ -2332,8 +2450,8 @@ function KeybindListWindow.RefreshList()
             })
 
             KeybindListWindow.Rows[count] = {
-                Name  = nameLabel,
-                Key   = keyLabel,
+                Name = nameLabel,
+                Key = keyLabel,
                 Entry = info
             }
         end
@@ -2341,7 +2459,7 @@ function KeybindListWindow.RefreshList()
 
     -- lebar window mengikuti panjang teks terpanjang (semua resolusi)
     local width = math.clamp(56 + maxLen * 6, 120, 420)
-    KeybindListWindow.List.Size  = UDim2.new(1, -16, 0, count * 16)
+    KeybindListWindow.List.Size = UDim2.new(1, -16, 0, count * 16)
     KeybindListWindow.Frame.Size = UDim2.new(0, width, 0, 26 + count * 16)
 end
 
@@ -2352,16 +2470,13 @@ function KeybindListWindow.UpdateColors()
         TweenService:Create(r.Name, TweenInfo.new(0.18), {
             TextColor3 = on and C.Text or Color3.fromRGB(112, 105, 112)
         }):Play()
-        TweenService:Create(r.Key, TweenInfo.new(0.18), {
-            TextColor3 = on and C.Text or C.SubText
-        }):Play()
+        TweenService:Create(r.Key, TweenInfo.new(0.18),
+                            {TextColor3 = on and C.Text or C.SubText}):Play()
     end
 end
 
 function KeybindListWindow.Destroy()
-    if KeybindListWindow.Gui then
-        KeybindListWindow.Gui:Destroy()
-    end
+    if KeybindListWindow.Gui then KeybindListWindow.Gui:Destroy() end
     KeybindListWindow.Gui = nil
     KeybindListWindow.Frame = nil
     KeybindListWindow.List = nil
