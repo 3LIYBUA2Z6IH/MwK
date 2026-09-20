@@ -6867,10 +6867,20 @@ local Library do
 
                     Update()
                 elseif type(Key) == "table" then
-                    local RealKey = Key.Key == "Backspace" and "None" or Key.Key
-                    Keybind.Key = tostring(Key.Key)
+                    --// [FIX] Saat Load Config, keybind dengan nilai Backspace dihitung "None".
+                    --// Nilai yang tersimpan berformat "Enum.KeyCode.Backspace" (bukan "Backspace"),
+                    --// jadi pengecekan lama (Key.Key == "Backspace") tidak pernah cocok dan
+                    --// setelah load tampilannya jadi "Backspace" bukan "None".
+                    local KeyString = tostring(Key.Key)
+                    local IsNone = KeyString == "None"
+                        or KeyString == "Backspace"
+                        or StringFind(KeyString, "Backspace") ~= nil
 
-                    if Key.ModeSelected then
+                    Keybind.Key = IsNone and "None" or KeyString
+
+                    --// [FIX] Data hasil Load Config menyimpan mode dengan field "Mode"
+                    --// (bukan "ModeSelected"), sebelumnya mode selalu balik ke "Toggle".
+                    if Key.Mode then
                         Keybind.ModeSelected = Key.Mode
                         Keybind:SetMode(Key.Mode)
                     else
@@ -6878,10 +6888,9 @@ local Library do
                         Keybind:SetMode("Toggle")
                     end
 
-                    local KeyString = Keys[Keybind.Key] or StringGSub(tostring(RealKey), "Enum.", "") or RealKey
-                    local TextToDisplay = KeyString and StringGSub(StringGSub(KeyString, "KeyCode.", ""), "UserInputType.", "") or "None"
+                    local KeyString = IsNone and "None" or (Keys[Keybind.Key] or StringGSub(KeyString, "Enum.", ""))
 
-                    TextToDisplay = StringGSub(StringGSub(KeyString, "KeyCode.", ""), "UserInputType.", "")
+                    local TextToDisplay = StringGSub(StringGSub(KeyString, "KeyCode.", ""), "UserInputType.", "")
 
                     Keybind.Value = TextToDisplay
                     Items["KeyButton"].Instance.Text = TextToDisplay
