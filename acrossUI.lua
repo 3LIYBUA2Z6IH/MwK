@@ -867,8 +867,30 @@ local Library do
         local Decoded = HttpService:JSONDecode(Config)
 
         local Success, Result = Library:SafeCall(function()
+            local Ordered = { }
+
             for Index, Value in Decoded do 
-                local SetFunction = Library.SetFlags[Index]
+                TableInsert(Ordered, {Index = Index, Value = Value})
+            end
+
+            --// [FIX] Terapkan flag colorpicker lebih dulu, lalu nilai biasa (slider/toggle/dll)
+            --// paling akhir. Iterasi tabel Lua urutannya acak, jadi tanpa ini slider bisa
+            --// diproses sebelum colorpicker dan nilainya ketimpa alpha lama dari colorpicker
+            --// (contoh: ChamsFillAlpha sudah ter-set lalu balik ke nilai awal).
+            table.sort(Ordered, function(A, B)
+                local AIsColor = type(A.Value) == "table" and A.Value.Color ~= nil
+                local BIsColor = type(B.Value) == "table" and B.Value.Color ~= nil
+
+                if AIsColor ~= BIsColor then 
+                    return AIsColor
+                end
+
+                return false 
+            end)
+
+            for _, Entry in Ordered do 
+                local SetFunction = Library.SetFlags[Entry.Index]
+                local Value = Entry.Value
 
                 if not SetFunction then
                     continue
