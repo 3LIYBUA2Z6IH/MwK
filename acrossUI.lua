@@ -6845,9 +6845,14 @@ local Library do
 
             function Keybind:Set(Key)
                 if StringFind(tostring(Key), "Enum") then 
-                    Keybind.Key = tostring(Key)
+                    --// [FIX] Menekan Backspace saat memilih key dihitung "None".
+                    --// Simpan "None" (bukan "Enum.KeyCode.Backspace") supaya tampilan
+                    --// DAN hasil save config langsung bersih sebagai "None".
+                    local IsNone = Key.Name == "Backspace"
 
-                    Key = Key.Name == "Backspace" and "None" or Key.Name
+                    Keybind.Key = IsNone and "None" or tostring(Key)
+
+                    Key = IsNone and "None" or Key.Name
 
                     local KeyString = Keys[Keybind.Key] or StringGSub(Key, "Enum.", "") or "None"
                     local TextToDisplay = StringGSub(StringGSub(KeyString, "KeyCode.", ""), "UserInputType.", "") or "None"
@@ -6867,10 +6872,10 @@ local Library do
 
                     Update()
                 elseif type(Key) == "table" then
-                    --// [FIX] Saat Load Config, keybind dengan nilai Backspace dihitung "None".
-                    --// Nilai yang tersimpan berformat "Enum.KeyCode.Backspace" (bukan "Backspace"),
-                    --// jadi pengecekan lama (Key.Key == "Backspace") tidak pernah cocok dan
-                    --// setelah load tampilannya jadi "Backspace" bukan "None".
+                    --// [FIX] Saat Load Config, keybind dengan nilai Backspace
+                    --// ("Enum.KeyCode.Backspace", "Backspace", atau "None")
+                    --// SELALU dianggap "None": Keybind.Key = "None" dan tombol
+                    --// menampilkan "None" (backspace tidak dihitung).
                     local KeyString = tostring(Key.Key)
                     local IsNone = KeyString == "None"
                         or KeyString == "Backspace"
