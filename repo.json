@@ -1,0 +1,9 @@
+{
+  "name": "CloudXx",
+  "description": "🇮🇩 Indonesian Movie Repository for CloudStreamm",
+  "iconUrl": "https://i.ibb.co/q3YkdNRv/asm0d3usx.png",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/TeKuma25/IndoStream/builds/plugins.json"
+  ]
+}
